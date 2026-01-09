@@ -27,3 +27,9 @@ mlruns/
 # --- Scratchpads ---
 Untitled.ipynb
 rough.py
+
+# --- Experiment Results ---
+latest_experiment_result.json
+detailed_report_card.csv
+emergency_results.csv
+config_snapshot.json
