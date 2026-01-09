@@ -1,0 +1,29 @@
+# --- Python & System Garbage ---
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.ipynb_checkpoints/
+
+# --- Virtual Environment & Dependencies ---
+# Based on your folder list, these likely contain libraries
+venv/
+lib/
+opt/
+
+# --- Heavy Data (The "Brain" and Raw Materials) ---
+# We keep the code, but ignore the heavy files
+faiss_course_store/
+PDFs/
+data_pdfs/
+Scrape/
+
+# --- Results & Logs ---
+test_dataset.xlsx
+report_card.csv
+report_card_mlflow.csv
+mlruns/
+
+# --- Scratchpads ---
+Untitled.ipynb
+rough.py
