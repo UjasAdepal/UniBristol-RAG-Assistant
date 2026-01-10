@@ -33,3 +33,6 @@ latest_experiment_result.json
 detailed_report_card.csv
 emergency_results.csv
 config_snapshot.json
+
+_archive/
+data_raw/

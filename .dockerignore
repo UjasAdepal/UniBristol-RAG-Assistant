@@ -1,0 +1,25 @@
+# Ignore Git files
+.git
+.gitignore
+
+# Ignore Virtual Env
+venv/
+lib/
+bin/
+__pycache__/
+
+# Ignore Data & Trash (We only need the FAISS store, not raw JSONs)
+_archive/
+data_raw/
+PDFs/
+data_pdfs/
+Scrape/
+scripts_etl/
+
+# Ignore Logs & Results
+mlruns/
+mlflow.db
+*.csv
+*.xlsx
+*.json
+!final_course_data_full.json  # (Uncomment this ONLY if your app specifically loads this JSON)
