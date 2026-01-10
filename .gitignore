@@ -1,38 +1,35 @@
+# --- Security (CRITICAL) ---
+.env
+
 # --- Python & System Garbage ---
 __pycache__/
 *.pyc
 .DS_Store
-.env
 .ipynb_checkpoints/
 
 # --- Virtual Environment & Dependencies ---
-# Based on your folder list, these likely contain libraries
 venv/
 lib/
+# We ignore 'opt' because the code will re-download the Reranker model automatically
 opt/
 
-# --- Heavy Data (The "Brain" and Raw Materials) ---
-# We keep the code, but ignore the heavy files
-faiss_course_store/
+# --- Heavy Source Data (Ignore these, we only need the FAISS index) ---
 PDFs/
 data_pdfs/
 Scrape/
+data_raw/
+_archive/
 
 # --- Results & Logs ---
 test_dataset.xlsx
 report_card.csv
 report_card_mlflow.csv
 mlruns/
-
-# --- Scratchpads ---
-Untitled.ipynb
-rough.py
-
-# --- Experiment Results ---
 latest_experiment_result.json
 detailed_report_card.csv
 emergency_results.csv
 config_snapshot.json
 
-_archive/
-data_raw/
+# --- Scratchpads ---
+Untitled.ipynb
+rough.py
