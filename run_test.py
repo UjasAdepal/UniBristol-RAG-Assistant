@@ -2,13 +2,11 @@ import pandas as pd
 import json
 import os
 import warnings
-import numpy as np # <--- Added for type checking
+import numpy as np 
 from datetime import datetime
 from datasets import Dataset
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_recall, answer_correctness
-
-# backend imports
 import faiss
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -23,7 +21,7 @@ warnings.filterwarnings("ignore")
 # disable parallelism to avoid warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# --- HELPER: FIX JSON SERIALIZATION ERROR ---
+# FIX JSON SERIALIZATION ERROR 
 class NumpyEncoder(json.JSONEncoder):
     """ Special json encoder for numpy types """
     def default(self, obj):
@@ -35,7 +33,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NumpyEncoder, self).default(obj)
 
-# --- MAIN CONFIGURATION ---
+#  MAIN CONFIGURATION 
 CONFIG = {
     "experiment_name": "BristolBot_Experiments",
     "model": {
@@ -50,7 +48,7 @@ CONFIG = {
         "reranker_model": "ms-marco-MiniLM-L-12-v2",
         "initial_k": 10,
         "final_k": 5,
-        "score_threshold": 0.40  # <--- UPDATED: Set to 0.40 as requested
+        "score_threshold": 0.40  
     },
     "data": {
         "test_file": "test_dataset.xlsx",
@@ -94,7 +92,7 @@ def rerank_docs(query, docs, ranker):
     
     sorted_docs = []
     
-    # --- EXPERIMENT CHANGE: STRICT FILTERING ---
+    # EXPERIMENT CHANGE: STRICT FILTERING
     # Retrieve the threshold from CONFIG
     threshold = CONFIG["retrieval"]["score_threshold"]
     
@@ -105,8 +103,7 @@ def rerank_docs(query, docs, ranker):
             doc.metadata["score"] = res['score']
             sorted_docs.append(doc)
             
-    # SAFETY NET: If we filtered EVERYTHING out, keep the best one
-    # (only if it has at least some relevance, > 0.20)
+    # If we filtered EVERYTHING out, keep the best one (only if it has at least some relevance, > 0.20)
     if not sorted_docs and results:
         if results[0]['score'] > 0.20:
             best_doc = docs[int(results[0]['id'])]
@@ -116,7 +113,7 @@ def rerank_docs(query, docs, ranker):
     return sorted_docs[:CONFIG["retrieval"]["final_k"]]
 
 def run_experiment():
-    print("Initializing pipeline...")
+    print("Initializing pipeline")
     
     # load embedding model and reranker
     embeddings = HuggingFaceEmbeddings(model_name=CONFIG["retrieval"]["embedding_model"])
@@ -148,7 +145,7 @@ def run_experiment():
     # Initialize lists
     questions, ground_truths, answers, contexts, retrieval_scores = [], [], [], [], []
     
-    print("Starting evaluation...")
+    print("Starting evaluation")
     for index, row in df_test.iterrows():
         q = row['Question']
         truth = row['Ground_Truth']

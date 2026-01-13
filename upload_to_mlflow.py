@@ -4,34 +4,34 @@ import pandas as pd
 import os
 import numpy as np
 
-# --- CONFIGURATION ---
+# CONFIGURATION
 INPUT_FILE = "latest_experiment_result.json"
 EXPERIMENT_NAME = "BristolBot_Experiments"
 
 def upload_results():
     if not os.path.exists(INPUT_FILE):
-        print(f"❌ Error: Could not find {INPUT_FILE}. Run 'run_test.py' first.")
+        print(f"Error: Could not find {INPUT_FILE}. Run 'run_test.py' first.")
         return
 
-    print(f"📂 Reading {INPUT_FILE}...")
+    print(f"Reading {INPUT_FILE}...")
     with open(INPUT_FILE, "r") as f:
         data = json.load(f)
 
-    # Extract sections
+    # extract sections
     config = data["configuration"]
     raw_metrics = data["metrics"]
     details = data["detailed_results"]
     timestamp = data["metadata"]["timestamp"]
 
-    print(f"📊 Connecting to MLflow Experiment: {EXPERIMENT_NAME}")
+    print(f"Connecting to MLflow Experiment: {EXPERIMENT_NAME}")
     mlflow.set_experiment(EXPERIMENT_NAME)
 
-    # Use threshold in name for easy comparison
+    # use threshold in name for easy comparison
     thresh = config["retrieval"].get("score_threshold", "Base")
     with mlflow.start_run(run_name=f"Run_{timestamp}_Thresh_{thresh}"):
         
-        # 1. LOG PARAMETERS
-        print("📝 Logging Parameters...")
+        # 1. lOG PARAMETERS
+        print("Logging Parameters...")
         
         # Model
         mlflow.log_param("model.name", config["model"]["name"])
@@ -43,14 +43,14 @@ def upload_results():
         mlflow.log_param("retrieval.reranker", config["retrieval"].get("reranker_model", "None"))
         mlflow.log_param("retrieval.initial_k", config["retrieval"].get("initial_k", 0))
         
-        # <--- LOG THE THRESHOLD (0.40)
+        # LOG THE THRESHOLD (0.40)
         mlflow.log_param("retrieval.score_threshold", config["retrieval"].get("score_threshold", 0.001))
         
         # Prompt
         mlflow.log_param("prompt.template", config["prompt_template"])
 
         # 2. LOG METRICS (Sanitized)
-        print("📈 Logging Metrics...")
+        print("Logging Metrics...")
         clean_metrics = {}
         
         for key, value in raw_metrics.items():
@@ -61,7 +61,7 @@ def upload_results():
                     clean_val = float(value)
                 clean_metrics[key] = clean_val
             except Exception as e:
-                print(f"⚠️ Warning: Could not process metric {key}: {e}")
+                print(f"Warning: Could not process metric {key}: {e}")
         
         mlflow.log_metrics(clean_metrics)
 
@@ -75,7 +75,7 @@ def upload_results():
         mlflow.log_artifact(csv_filename)
         mlflow.log_dict(config, "config_snapshot.json")
         
-        print("✅ Success! Experiment uploaded to MLflow.")
+        print("Success! Experiment uploaded to MLflow.")
 
 if __name__ == "__main__":
     upload_results()

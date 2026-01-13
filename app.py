@@ -22,7 +22,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 st.set_page_config(page_title="BristolBot AI Tutor", layout="wide")
 
-# ==================== CACHED RESOURCES ====================
+# CACHED RESOURCES
 
 @st.cache_resource
 def get_embeddings():
@@ -59,7 +59,7 @@ def initialize_rag_system():
         "faq_store": faq_store
     }
 
-# ==================== BACKEND LOGIC ====================
+# BACKEND LOGIC 
 
 def rerank_docs(query_text, docs, reranker):
     """Apply cross-encoder reranking to retrieved documents."""
@@ -154,7 +154,7 @@ def save_feedback(question, response, is_helpful):
             writer.writerow(["Timestamp", "Query", "Response", "Helpful"])
         writer.writerow([datetime.datetime.now(), question, response, "Yes" if is_helpful else "No"])
 
-# ==================== INITIALIZATION ====================
+# INITIALIZATION 
 
 rag_system = initialize_rag_system()
 
@@ -166,37 +166,37 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
     st.session_state.messages.append({
         "role": "assistant",
-        "content": "Hello! 👋 I'm BristolBot, your AI assistant for the University of Bristol. I can help you with questions about:\n\n• 📚 Courses and admissions\n• 💰 Fees and scholarships\n• 🏠 Accommodation\n• 📝 Regulations and policies\n• 🎓 Student life\n\nWhat would you like to know?"
+        "content": "Hello! 👋 I'm BristolBot, your AI assistant for the University of Bristol. I can help you with questions about:\n\n•  Courses and admissions\n• Fees and scholarships\n• Accommodation\n• Regulations and policies\n• 🎓 Student life\n\nWhat would you like to know?"
     })
 
-# ==================== SIDEBAR ====================
+# SIDEBAR 
 
 with st.sidebar:
     st.header("⚙️ Settings")
     
-    debug_mode = st.toggle("🐛 Debug Mode", value=False, help="Show retrieval diagnostics")
+    debug_mode = st.toggle(" Debug Mode", value=False, help="Show retrieval diagnostics")
     
-    st.subheader("📊 Database Status")
+    st.subheader("Database Status")
     
     course_loaded = rag_system["course_store"] is not None
     faq_loaded = rag_system["faq_store"] is not None
     
-    st.write("Course Store:", "✅" if course_loaded else "❌")
+    st.write("Course Store:", "success" if course_loaded else "fail")
     
     if PATHS["faq_store"]:
-        st.write("FAQ Store:", "✅" if faq_loaded else "❌")
+        st.write("FAQ Store:", "success" if faq_loaded else "fail")
         if not course_loaded or not faq_loaded:
-            st.error("⚠️ Some vector stores are missing!")
+            st.error(" Some vector stores are missing!")
     else:
-        st.info("ℹ️ Using single unified vector store")
+        st.info("Using single unified vector store")
         if not course_loaded:
-            st.error("⚠️ Vector store is missing!")
+            st.error(" Vector store is missing!")
     
-    if st.button("🗑️ Clear Cache"):
+    if st.button("Clear Cache"):
         st.cache_resource.clear()
         st.rerun()
     
-    if st.button("🔄 Clear Chat History"):
+    if st.button("Clear Chat History"):
         st.session_state.messages = []
         st.session_state.query_times = []
         st.success("Chat cleared!")
@@ -209,27 +209,27 @@ with st.sidebar:
     # Performance statistics
     if len(st.session_state.query_times) > 0:
         st.markdown("---")
-        st.subheader("📊 Performance Stats")
+        st.subheader("Performance Stats")
         
         avg_time = sum(st.session_state.query_times) / len(st.session_state.query_times)
         min_time = min(st.session_state.query_times)
         max_time = max(st.session_state.query_times)
         
         st.metric("Average Response", f"{avg_time:.2f}s")
-        st.caption(f"📈 Fastest: {min_time:.2f}s | Slowest: {max_time:.2f}s")
+        st.caption(f"Fastest: {min_time:.2f}s | Slowest: {max_time:.2f}s")
         st.caption(f"Total queries: {len(st.session_state.query_times)}")
         
         if avg_time < 1.0:
             st.success("🚀 Excellent performance!")
         elif avg_time < 2.0:
-            st.info("✅ Good performance")
+            st.info("Good performance")
         else:
-            st.warning("⚠️ Consider optimization")
+            st.warning("Consider optimization")
     
     # Conversation stats
     if len(st.session_state.messages) > 1:
         st.markdown("---")
-        st.subheader("💬 Conversation")
+        st.subheader("Conversation")
         
         user_msgs = sum(1 for m in st.session_state.messages if m["role"] == "user")
         assistant_msgs = sum(1 for m in st.session_state.messages if m["role"] == "assistant") - 1
@@ -237,14 +237,14 @@ with st.sidebar:
         st.metric("Messages", f"{user_msgs + assistant_msgs}")
         st.caption(f"👤 You: {user_msgs} | 🤖 Bot: {assistant_msgs}")
 
-# ==================== MAIN UI ====================
+# MAIN UI
 
 st.title("🎓 BristolBot - University of Bristol AI Tutor")
 st.caption("Ask me anything about admissions, fees, scholarships, accommodation, and more!")
 
 # Show example questions if chat is new
 if len(st.session_state.messages) <= 1:
-    st.markdown("### 💡 Try these example questions:")
+    st.markdown("### Try these example questions:")
     
     example_questions = [
         "How much is the Cratchley Scholarship worth?",
@@ -256,7 +256,7 @@ if len(st.session_state.messages) <= 1:
     cols = st.columns(2)
     for i, example_q in enumerate(example_questions):
         with cols[i % 2]:
-            if st.button(f"💬 {example_q}", key=f"example_{i}", use_container_width=True):
+            if st.button(f"{example_q}", key=f"example_{i}", use_container_width=True):
                 st.session_state.messages.append({"role": "user", "content": example_q})
                 st.rerun()
     
@@ -269,18 +269,18 @@ for message in st.session_state.messages:
         
         # Show sources for assistant messages
         if message["role"] == "assistant" and "sources" in message:
-            with st.expander("📚 View Sources"):
+            with st.expander("View Sources"):
                 for j, src in enumerate(message["sources"], 1):
                     st.markdown(f"**{j}. {src['title']}** (Score: {src['score']:.3f})")
                     if debug_mode:
                         st.code(src['content'][:300] + "...", language="text")
-                    st.markdown(f"[🔗 View source]({src['url']})")
+                    st.markdown(f"[View source]({src['url']})")
                     if j < len(message["sources"]):
                         st.divider()
         
         # Show timing
         if message["role"] == "assistant" and "timing" in message:
-            st.caption(f"⏱️ Response time: {message['timing']:.2f}s")
+            st.caption(f"Response time: {message['timing']:.2f}s")
 
 # Chat input
 if user_input := st.chat_input("Ask your question here..."):
@@ -293,7 +293,7 @@ if user_input := st.chat_input("Ask your question here..."):
     
     # Generate response
     with st.chat_message("assistant"):
-        with st.spinner("🔍 Searching knowledge base..."):
+        with st.spinner("Searching knowledge base..."):
             try:
                 answer, sources, debug_info = get_answer(user_input, rag_system, debug_mode=debug_mode)
                 
@@ -304,10 +304,10 @@ if user_input := st.chat_input("Ask your question here..."):
                 
                 # Show timing
                 if debug_info and "timings" in debug_info:
-                    st.success(f"⏱️ **Response generated in {debug_info['timings']['total']:.2f}s**")
+                    st.success(f"**Response generated in {debug_info['timings']['total']:.2f}s**")
                     
                     if debug_mode:
-                        st.info(f"🔍 Retrieved {debug_info.get('total_retrieved', 0)} docs → Filtered to {debug_info.get('after_rerank', 0)}")
+                        st.info(f"Retrieved {debug_info.get('total_retrieved', 0)} docs → Filtered to {debug_info.get('after_rerank', 0)}")
                 
                 # Show sources
                 if sources:
@@ -316,7 +316,7 @@ if user_input := st.chat_input("Ask your question here..."):
                             st.markdown(f"**{j}. {src['title']}** (Score: {src['score']:.3f})")
                             if debug_mode:
                                 st.code(src['content'][:300] + "...", language="text")
-                            st.markdown(f"[🔗 View source]({src['url']})")
+                            st.markdown(f"[View source]({src['url']})")
                             if j < len(sources):
                                 st.divider()
                 
@@ -331,7 +331,7 @@ if user_input := st.chat_input("Ask your question here..."):
                 st.rerun()
                 
             except Exception as e:
-                error_message = f"❌ Sorry, I encountered an error: {str(e)}"
+                error_message = f"Sorry, I encountered an error: {str(e)}"
                 st.error(error_message)
                 st.session_state.messages.append({"role": "assistant", "content": error_message})
                 if debug_mode:
