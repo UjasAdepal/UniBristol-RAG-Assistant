@@ -14,7 +14,7 @@ from flashrank import Ranker, RerankRequest
 try:
     from config import CONFIG, PATHS
 except ImportError:
-    st.error("⚠️ config.py not found! Create it first.")
+    st.error(" config.py not found! Create it first.")
     st.stop()
 
 load_dotenv()
