@@ -1,38 +1,65 @@
-# --- Security (CRITICAL) ---
+# Security
 .env
+*.env
 
-# --- Python & System Garbage ---
+# Python
 __pycache__/
 *.pyc
-.DS_Store
-.ipynb_checkpoints/
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
 
-# --- Virtual Environment & Dependencies ---
+# Virtual Environment
 venv/
-lib/
-# We ignore 'opt' because the code will re-download the Reranker model automatically
-opt/
+ENV/
+env/
 
-# --- Heavy Source Data (Ignore these, we only need the FAISS index) ---
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Data & Models (Large files)
+faiss_*/
+*.pkl
+*.faiss
+opt/
 PDFs/
 data_pdfs/
-Scrape/
 data_raw/
-_archive/
+Scrape/
 
-# --- Results & Logs ---
+# Archived/Experimental
+_archive/
+scripts_etl/
+lib/
+
+# Test Artifacts
 test_dataset.xlsx
-report_card.csv
-report_card_mlflow.csv
-mlruns/
+report_card*.csv
 latest_experiment_result.json
 detailed_report_card.csv
 emergency_results.csv
 config_snapshot.json
+feedback_log.csv
+problem_queries.txt
 
-# --- Scratchpads ---
-Untitled.ipynb
+# MLflow
+mlruns/
+mlflow.db
+
+# Jupyter
+*.ipynb_checkpoints/
+Untitled*.ipynb
+
+# Misc
 rough.py
-
-mlflow.db 
-lib/
+test_performance.py
+LICENSE
