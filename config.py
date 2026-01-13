@@ -1,6 +1,6 @@
 """
-Shared Configuration for BristolBot
-All files (app.py, backend.py, run_test.py) import from here
+Configuration module for BristolBot RAG system.
+Centralizes model parameters, retrieval settings, and file paths.
 """
 
 CONFIG = {
@@ -14,12 +14,12 @@ CONFIG = {
     
     "retrieval": {
         "course_store": "./faiss_course_store",
-        "faq_store": None,  # ✅ FIXED: No separate FAQ store
+        "faq_store": None,
         "embedding_model": "sentence-transformers/all-mpnet-base-v2",
         "reranker_model": "ms-marco-MiniLM-L-12-v2",
         "initial_k": 10,
         "final_k": 5,
-        "score_threshold": 0.40  # Strict filtering to prevent hallucinations
+        "score_threshold": 0.40
     },
     
     "data": {
@@ -47,9 +47,8 @@ Answer:
 """
 }
 
-# Paths for easy access
 PATHS = {
     "course_store": CONFIG["retrieval"]["course_store"],
-    "faq_store": CONFIG["retrieval"]["faq_store"],  # Will be None
+    "faq_store": CONFIG["retrieval"]["faq_store"],
     "feedback_file": CONFIG["data"]["feedback_file"]
 }

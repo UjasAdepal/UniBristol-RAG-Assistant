@@ -40,9 +40,7 @@ def load_vectorstore(path):
 
 @st.cache_resource
 def initialize_rag_system():
-    """Load all resources once at startup."""
-    print("🔄 Initializing RAG system...")
-    
+    """Initialize RAG components on first load."""
     embeddings = get_embeddings()
     reranker = get_reranker()
     llm = ChatOpenAI(
@@ -52,8 +50,6 @@ def initialize_rag_system():
     
     course_store = load_vectorstore(PATHS["course_store"])
     faq_store = load_vectorstore(PATHS["faq_store"]) if PATHS["faq_store"] else None
-    
-    print("✅ RAG system ready!")
     
     return {
         "embeddings": embeddings,
@@ -66,7 +62,7 @@ def initialize_rag_system():
 # ==================== BACKEND LOGIC ====================
 
 def rerank_docs(query_text, docs, reranker):
-    """Rerank documents using FlashRank"""
+    """Apply cross-encoder reranking to retrieved documents."""
     if not docs:
         return []
     
@@ -84,7 +80,6 @@ def rerank_docs(query_text, docs, reranker):
             doc.metadata["score"] = res['score']
             sorted_docs.append(doc)
     
-    # Safety net
     if not sorted_docs and results:
         if results[0]['score'] > 0.20:
             best_doc = docs[int(results[0]['id'])]
@@ -94,7 +89,7 @@ def rerank_docs(query_text, docs, reranker):
     return sorted_docs[:CONFIG["retrieval"]["final_k"]]
 
 def get_answer(question, rag_system, debug_mode=False):
-    """Main RAG pipeline"""
+    """Execute RAG pipeline: retrieval, reranking, and generation."""
     timings = {}
     start_total = time.time()
     
@@ -103,7 +98,6 @@ def get_answer(question, rag_system, debug_mode=False):
     reranker = rag_system["reranker"]
     llm = rag_system["llm"]
     
-    # Retrieval
     start_retrieval = time.time()
     all_retrieved = []
     
@@ -119,12 +113,10 @@ def get_answer(question, rag_system, debug_mode=False):
     
     timings["retrieval"] = time.time() - start_retrieval
     
-    # Rerank
     start_rerank = time.time()
     best_docs = rerank_docs(question, all_retrieved, reranker)
     timings["rerank"] = time.time() - start_rerank
     
-    # Generation
     if not best_docs:
         return "I couldn't find relevant information in the database.", [], None
     
@@ -137,7 +129,6 @@ def get_answer(question, rag_system, debug_mode=False):
     
     timings["total"] = time.time() - start_total
     
-    # Format sources
     sources = [{
         "title": d.metadata.get("title", "Unknown"),
         "url": d.metadata.get("url", "#"),
