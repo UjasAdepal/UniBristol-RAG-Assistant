@@ -26,7 +26,9 @@ def upload_results():
     print(f"📊 Connecting to MLflow Experiment: {EXPERIMENT_NAME}")
     mlflow.set_experiment(EXPERIMENT_NAME)
 
-    with mlflow.start_run(run_name=f"Run_{timestamp}"):
+    # Use threshold in name for easy comparison
+    thresh = config["retrieval"].get("score_threshold", "Base")
+    with mlflow.start_run(run_name=f"Run_{timestamp}_Thresh_{thresh}"):
         
         # 1. LOG PARAMETERS
         print("📝 Logging Parameters...")
@@ -41,25 +43,26 @@ def upload_results():
         mlflow.log_param("retrieval.reranker", config["retrieval"].get("reranker_model", "None"))
         mlflow.log_param("retrieval.initial_k", config["retrieval"].get("initial_k", 0))
         
+        # <--- LOG THE THRESHOLD (0.40)
+        mlflow.log_param("retrieval.score_threshold", config["retrieval"].get("score_threshold", 0.001))
+        
         # Prompt
         mlflow.log_param("prompt.template", config["prompt_template"])
-        
+
         # 2. LOG METRICS (Sanitized)
         print("📈 Logging Metrics...")
         clean_metrics = {}
         
-        # CRITICAL FIX: Loop through and fix any lists/weird formats
         for key, value in raw_metrics.items():
             try:
                 if isinstance(value, list):
-                    # If it's a list like [0.8], take the first number
                     clean_val = float(value[0]) if len(value) > 0 else 0.0
                 else:
                     clean_val = float(value)
                 clean_metrics[key] = clean_val
             except Exception as e:
                 print(f"⚠️ Warning: Could not process metric {key}: {e}")
-
+        
         mlflow.log_metrics(clean_metrics)
 
         # 3. LOG ARTIFACTS

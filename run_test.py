@@ -2,8 +2,9 @@ import pandas as pd
 import json
 import os
 import warnings
+import numpy as np # <--- Added for type checking
 from datetime import datetime
-from datasets import Dataset 
+from datasets import Dataset
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy, context_recall, answer_correctness
 
@@ -13,7 +14,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from flashrank import Ranker, RerankRequest 
+from flashrank import Ranker, RerankRequest
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,21 +23,34 @@ warnings.filterwarnings("ignore")
 # disable parallelism to avoid warnings
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-# main config
+# --- HELPER: FIX JSON SERIALIZATION ERROR ---
+class NumpyEncoder(json.JSONEncoder):
+    """ Special json encoder for numpy types """
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
+
+# --- MAIN CONFIGURATION ---
 CONFIG = {
-    "experiment_name": "BristolBot_Redesign_Hybrid",
+    "experiment_name": "BristolBot_Experiments",
     "model": {
         "name": "gpt-3.5-turbo",
-        "temperature": 0.1, 
+        "temperature": 0.1,
         "provider": "OpenAI"
     },
     "retrieval": {
         "course_store": "./faiss_course_store",
-        "faq_store": "./faiss_faq_store", 
+        "faq_store": "./faiss_faq_store",
         "embedding_model": "sentence-transformers/all-mpnet-base-v2",
-        "reranker_model": "ms-marco-MiniLM-L-12-v2", 
-        "initial_k": 10, 
-        "final_k": 5     
+        "reranker_model": "ms-marco-MiniLM-L-12-v2",
+        "initial_k": 10,
+        "final_k": 5,
+        "score_threshold": 0.40  # <--- UPDATED: Set to 0.40 as requested
     },
     "data": {
         "test_file": "test_dataset.xlsx",
@@ -45,13 +59,14 @@ CONFIG = {
     "prompt_template": """You are an expert academic advisor for the University of Bristol.
 Use the provided context to answer the student's question accurately.
 
-Guidelines:
-1. If the exact answer is in the context, use it.
-2. If the user asks about a specific course (e.g., MSc AI) and it is NOT in the context, explicitly say: "I currently do not have information on that specific course." DO NOT hallucinate fees or details.
-3. Be friendly but professional.
-
 Context:
 {context}
+
+CRITICAL RULES:
+1. **Numbers over Words:** If the text contains specific thresholds (e.g., "85%", "70%"), prioritize them over general statements.
+2. **Conditional Logic:** If rules change by year (e.g., "pre-2024" vs "post-2024"), YOU MUST STATE BOTH. Do not guess.
+3. **Closed World Assumption:** If a payment method or course is NOT listed in the text, explicitly state that it is "Not accepted" or "Not available".
+4. **Citations:** Answer first, then list the source names used.
 
 Question:
 {question}
@@ -69,7 +84,7 @@ def rerank_docs(query, docs, ranker):
         return []
     
     passages = [
-        {"id": str(i), "text": doc.page_content, "meta": doc.metadata} 
+        {"id": str(i), "text": doc.page_content, "meta": doc.metadata}
         for i, doc in enumerate(docs)
     ]
     
@@ -78,11 +93,25 @@ def rerank_docs(query, docs, ranker):
     results = ranker.rerank(rerank_request)
     
     sorted_docs = []
+    
+    # --- EXPERIMENT CHANGE: STRICT FILTERING ---
+    # Retrieve the threshold from CONFIG
+    threshold = CONFIG["retrieval"]["score_threshold"]
+    
     for res in results:
-        if res['score'] > 0.001: 
+        # Filter based on the config threshold
+        if res['score'] > threshold:
             doc = docs[int(res['id'])]
             doc.metadata["score"] = res['score']
             sorted_docs.append(doc)
+            
+    # SAFETY NET: If we filtered EVERYTHING out, keep the best one
+    # (only if it has at least some relevance, > 0.20)
+    if not sorted_docs and results:
+        if results[0]['score'] > 0.20:
+            best_doc = docs[int(results[0]['id'])]
+            best_doc.metadata["score"] = results[0]['score']
+            sorted_docs.append(best_doc)
             
     return sorted_docs[:CONFIG["retrieval"]["final_k"]]
 
@@ -97,18 +126,18 @@ def run_experiment():
     course_store = None
     if os.path.exists(CONFIG["retrieval"]["course_store"]):
         course_store = FAISS.load_local(CONFIG["retrieval"]["course_store"], embeddings, allow_dangerous_deserialization=True)
-    
+        
     faq_store = None
     if os.path.exists(CONFIG["retrieval"]["faq_store"]):
         faq_store = FAISS.load_local(CONFIG["retrieval"]["faq_store"], embeddings, allow_dangerous_deserialization=True)
-
+        
     llm = ChatOpenAI(
-        model_name=CONFIG["model"]["name"], 
+        model_name=CONFIG["model"]["name"],
         temperature=CONFIG["model"]["temperature"]
     )
     
     prompt = PromptTemplate.from_template(CONFIG["prompt_template"])
-
+    
     print(f"Loading test data: {CONFIG['data']['test_file']}...")
     try:
         df_test = pd.read_excel(CONFIG['data']['test_file'])
@@ -116,8 +145,9 @@ def run_experiment():
         print(f"Error loading file: {e}")
         return
 
-    questions, ground_truths, answers, contexts = [], [], [], []
-
+    # Initialize lists
+    questions, ground_truths, answers, contexts, retrieval_scores = [], [], [], [], []
+    
     print("Starting evaluation...")
     for index, row in df_test.iterrows():
         q = row['Question']
@@ -129,25 +159,29 @@ def run_experiment():
             faq_docs = []
             if faq_store:
                 faq_docs = faq_store.similarity_search(q, k=CONFIG["retrieval"]["initial_k"])
-
+            
             course_docs = []
             if course_store:
                 course_docs = course_store.similarity_search(q, k=CONFIG["retrieval"]["initial_k"])
-
+                
             all_retrieved = faq_docs + course_docs
             best_docs = rerank_docs(q, all_retrieved, ranker)
-
+            
+            # extract scores for debugging
+            scores = [d.metadata.get("score", 0) for d in best_docs]
+            
             # generate answer
             context_text = "\n\n".join([d.page_content for d in best_docs])
             chain = prompt | llm
             ans_message = chain.invoke({"context": context_text, "question": q})
             ans_text = ans_message.content
-
+            
             # store results
             questions.append(q)
             ground_truths.append(truth)
             answers.append(ans_text)
-            contexts.append([d.page_content for d in best_docs]) 
+            contexts.append([d.page_content for d in best_docs])
+            retrieval_scores.append(scores) 
             print("Done")
             
         except Exception as e:
@@ -156,6 +190,7 @@ def run_experiment():
             ground_truths.append(truth)
             answers.append("Error")
             contexts.append(["No context"])
+            retrieval_scores.append([])
 
     # ragas evaluation
     print("\nGrading results...")
@@ -175,28 +210,36 @@ def run_experiment():
         print("\nScores:", results)
         
         # package results
-        
-        # manual extraction because ragas dict conversion can be buggy
         metrics_dict = {}
         for m in ["faithfulness", "answer_relevancy", "context_recall", "answer_correctness"]:
             try:
-                metrics_dict[m] = results[m] 
+                metrics_dict[m] = results[m]
             except Exception:
                 print(f"Warning: missing score for {m}")
                 metrics_dict[m] = 0
-
+        
         # try converting details to list of dicts
         detailed_records = []
         try:
             detailed_records = results.to_pandas().to_dict(orient="records")
+            # Inject scores
+            for i, record in enumerate(detailed_records):
+                if i < len(retrieval_scores):
+                    record["retrieved_scores"] = retrieval_scores[i]
         except Exception as e:
             print(f"Could not save detailed breakdown ({e}). Saving aggregates only.")
+            
             # fallback to manual data
             detailed_records = [
-                {"question": q, "answer": a, "ground_truth": t} 
-                for q, a, t in zip(questions, answers, ground_truths)
+                {
+                    "question": q, 
+                    "answer": a, 
+                    "ground_truth": t,
+                    "retrieved_scores": s
+                }
+                for q, a, t, s in zip(questions, answers, ground_truths, retrieval_scores)
             ]
-
+        
         full_package = {
             "metadata": {
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -208,15 +251,16 @@ def run_experiment():
             "detailed_results": detailed_records
         }
         
-        # save to disk
+        # save to disk using NumpyEncoder to fix the crash
         with open(CONFIG["data"]["output_json"], "w") as f:
-            json.dump(full_package, f, indent=4)
+            json.dump(full_package, f, indent=4, cls=NumpyEncoder)
             
         print(f"\nDone. Results saved to {CONFIG['data']['output_json']}")
         print("Run 'python upload_to_mlflow.py' to visualize.")
         
     except Exception as e:
         print(f"Grading failed: {e}")
+        
         # emergency save
         if len(answers) > 0:
             emergency_df = pd.DataFrame(data_dict)
