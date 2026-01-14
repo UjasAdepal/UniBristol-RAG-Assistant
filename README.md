@@ -909,17 +909,6 @@ furnished to do so, subject to the following conditions:
 
 ---
 
-## 📈 Project Stats
-
-- **Lines of Code**: ~800 (Python)
-- **Dependencies**: 17 production packages
-- **Test Coverage**: 85% (pytest)
-- **Deployment Frequency**: 2-3 times per week (CI/CD)
-- **Uptime**: 99.2% (AWS EC2)
-- **Average Response Time**: 0.87s
-- **Total Queries Served**: 500+ (since launch)
-
----
 
 ## 🔗 Related Projects
 
