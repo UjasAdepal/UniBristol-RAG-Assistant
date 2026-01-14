@@ -905,7 +905,6 @@ furnished to do so, subject to the following conditions:
 - **LangChain Community** - RAG framework and best practices
 - **OpenAI** - GPT-3.5-turbo API
 - **Facebook AI Research** - FAISS vector search library
-- **Anthropic** - Claude for code assistance and architecture design
 - **Streamlit Team** - Excellent web framework for ML applications
 
 ---
