@@ -816,7 +816,6 @@ fi
 ## 📚 Documentation
 
 - **[CI/CD Setup Guide](CI_CD_SETUP.md)** - Complete deployment pipeline documentation
-- **[API Documentation](docs/API.md)** - REST API reference (if applicable)
 - Architecture Deep Dive *(Coming soon)* (docs/ARCHITECTURE.md)** - Detailed system design
 - Evaluation Methodology *(Coming soon)* (docs/EVALUATION.md)** - RAGAS metrics explanation
 - Troubleshooting Guide *(Coming soon)* (docs/TROUBLESHOOTING.md)** - Common issues and solutions
