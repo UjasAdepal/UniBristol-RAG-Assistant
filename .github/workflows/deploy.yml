@@ -35,6 +35,10 @@ jobs:
             
             echo "🚀 Starting deployment..."
             
+            # Check current status
+            echo "📊 Current container status:"
+            docker ps -a --filter name=bristolbot
+            
             # Navigate to project directory
             cd ~/UniBristol-RAG-Assistant || cd ~/bristolbot
             
@@ -46,10 +50,18 @@ jobs:
             echo "🔑 Updating environment variables..."
             echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
             
-            # Stop and remove old container
-            echo "🛑 Stopping old container..."
-            docker stop bristolbot || true
-            docker rm bristolbot || true
+            # Stop and remove old container(s)
+            echo "🛑 Stopping old containers..."
+            docker stop bristolbot 2>/dev/null || true
+            docker rm bristolbot 2>/dev/null || true
+            
+            # Clean up any containers using port 8501
+            echo "🧹 Cleaning up port 8501..."
+            CONTAINER_IDS=$(docker ps -q --filter "publish=8501")
+            if [ ! -z "$CONTAINER_IDS" ]; then
+              docker stop $CONTAINER_IDS
+              docker rm $CONTAINER_IDS
+            fi
             
             # Build new Docker image
             echo "🏗️  Building new Docker image..."
