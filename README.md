@@ -910,14 +910,7 @@ furnished to do so, subject to the following conditions:
 ---
 
 
-## 🔗 Related Projects
 
-- [LangChain](https://github.com/langchain-ai/langchain) - LLM orchestration
-- [FAISS](https://github.com/facebookresearch/faiss) - Vector similarity search
-- [Streamlit](https://github.com/streamlit/streamlit) - Web framework
-- [RAGAS](https://github.com/explodinggradients/ragas) - RAG evaluation
-
----
 
 ## 📞 Support
 
@@ -925,14 +918,6 @@ furnished to do so, subject to the following conditions:
 - **Discussions**: [GitHub Discussions](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/discussions)
 - **Email**: ujasadepal1@gmail.com
 - **Documentation**: [Wiki](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/wiki)
-
----
-
-## ⭐ Star History
-
-If you find this project helpful, please consider giving it a star! ⭐
-
-[![Star History Chart](https://api.star-history.com/svg?repos=UjasAdepal/UniBristol-RAG-Assistant&type=Date)](https://star-history.com/#UjasAdepal/UniBristol-RAG-Assistant&Date)
 
 ---
 
