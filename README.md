@@ -1,7 +1,7 @@
 # 🎓 BristolBot - AI Academic Advisor
 
-[![Deploy to AWS](https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant/actions/workflows/deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant/actions/workflows/deploy.yml)
-[![Live Demo](https://img.shields.io/badge/Demo-Live%2024%2F7-success?style=for-the-badge&logo=amazonec2)](http://YOUR_ELASTIC_IP:8501)
+[![Deploy to AWS](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/actions/workflows/deploy.yml/badge.svg)](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/actions/workflows/deploy.yml)
+[![Live Demo](https://img.shields.io/badge/Demo-Live%2024%2F7-success?style=for-the-badge&logo=amazonec2)](http://13.205.105.83:8501)
 [![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
 [![AWS](https://img.shields.io/badge/AWS-EC2-FF9900?style=for-the-badge&logo=amazonaws)](https://aws.amazon.com/ec2/)
@@ -12,7 +12,7 @@
 
 ## 🔗 Quick Links
 
-- **[🚀 Try Live Demo](http://YOUR_ELASTIC_IP:8501)** - Test the application
+- **[🚀 Try Live Demo](http://13.205.105.83:8501)** - Test the application
 - **[📊 Performance Metrics](#-performance-metrics)** - 93% recall, <1s latency
 - **[🏗️ Architecture](#%EF%B8%8F-system-architecture)** - Technical design
 - **[⚙️ CI/CD Pipeline](#%EF%B8%8F-cicd-pipeline)** - Automated deployments
@@ -241,7 +241,7 @@ Evaluated using the **RAGAS framework** on a 50-question benchmark dataset:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant.git
+git clone https://github.com/UjasAdepal/UniBristol-RAG-Assistant.git
 cd UniBristol-RAG-Assistant
 
 # 2. Create virtual environment
@@ -269,7 +269,7 @@ streamlit run app.py
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant.git
+git clone https://github.com/UjasAdepal/UniBristol-RAG-Assistant.git
 cd UniBristol-RAG-Assistant
 
 # 2. Create .env file
@@ -320,7 +320,7 @@ curl http://localhost:8501
 
 ```bash
 # 1. SSH into EC2
-ssh -i ~/.ssh/bristolbot-key.pem ec2-user@YOUR_ELASTIC_IP
+ssh -i ~/.ssh/bristolbot-key.pem ec2-user@13.205.105.83
 
 # 2. Install dependencies
 sudo yum update -y
@@ -330,7 +330,7 @@ sudo systemctl enable docker
 sudo usermod -aG docker ec2-user
 
 # 3. Clone repository
-git clone https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant.git
+git clone https://github.com/UjasAdepal/UniBristol-RAG-Assistant.git
 cd UniBristol-RAG-Assistant
 
 # 4. Create environment file
@@ -346,7 +346,7 @@ docker ps
 docker logs bristolbot
 ```
 
-**Access**: `http://YOUR_ELASTIC_IP:8501`
+**Access**: `http://13.205.105.83:8501`
 
 ### Cost Breakdown
 
@@ -415,12 +415,12 @@ Automated deployment pipeline using **GitHub Actions** that triggers on every pu
 
 **GitHub Actions Dashboard**: 
 ```
-https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant/actions
+https://github.com/UjasAdepal/UniBristol-RAG-Assistant/actions
 ```
 
 **Deployment Status Badge**:
 ```markdown
-[![Deploy to AWS](https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant/actions/workflows/deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant/actions/workflows/deploy.yml)
+[![Deploy to AWS](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/actions/workflows/deploy.yml/badge.svg)](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/actions/workflows/deploy.yml)
 ```
 
 ### Manual Deployment Trigger
@@ -441,7 +441,7 @@ git push origin main
 # CI/CD will automatically deploy the previous version
 
 # Option 2: Manual rollback on EC2
-ssh -i ~/.ssh/bristolbot-key.pem ec2-user@YOUR_IP
+ssh -i ~/.ssh/bristolbot-key.pem ec2-user@13.205.105.83
 docker stop bristolbot && docker rm bristolbot
 docker run -d -p 8501:8501 --name bristolbot --restart unless-stopped --env-file .env bristolbot:PREVIOUS_TAG
 ```
@@ -817,9 +817,9 @@ fi
 
 - **[CI/CD Setup Guide](CI_CD_SETUP.md)** - Complete deployment pipeline documentation
 - **[API Documentation](docs/API.md)** - REST API reference (if applicable)
-- **[Architecture Deep Dive](docs/ARCHITECTURE.md)** - Detailed system design
-- **[Evaluation Methodology](docs/EVALUATION.md)** - RAGAS metrics explanation
-- **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- Architecture Deep Dive *(Coming soon)* (docs/ARCHITECTURE.md)** - Detailed system design
+- Evaluation Methodology *(Coming soon)* (docs/EVALUATION.md)** - RAGAS metrics explanation
+- Troubleshooting Guide *(Coming soon)* (docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ---
 
@@ -832,13 +832,13 @@ Contributions are welcome! Please follow these guidelines:
 ```bash
 # 1. Fork the repository
 # 2. Clone your fork
-git clone https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant.git
+git clone https://github.com/UjasAdepal/UniBristol-RAG-Assistant.git
 
 # 3. Create a feature branch
 git checkout -b feature/your-feature-name
 
-# 4. Install dev dependencies
-pip install -r requirements-dev.txt
+# 4. Install dependencies
+pip install -r requirements.txt
 
 # 5. Make your changes
 # 6. Run tests
@@ -878,7 +878,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ```
 MIT License
 
-Copyright (c) 2026 [Your Name]
+Copyright (c) 2026 Ujas Adepal
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -894,11 +894,9 @@ furnished to do so, subject to the following conditions:
 
 ## 👤 Author
 
-**Your Name**  
-📧 your.email@example.com  
-🔗 [LinkedIn](https://linkedin.com/in/yourprofile)  
-💼 [Portfolio](https://yourportfolio.com)  
-🐦 [Twitter](https://twitter.com/yourhandle)
+**Ujas Adepal**  
+📧 ujasadepal1@gmail.com 
+🔗 [LinkedIn](https://www.linkedin.com/in/ujasadepal)  
 
 ---
 
@@ -936,10 +934,10 @@ furnished to do so, subject to the following conditions:
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant/discussions)
-- **Email**: your.email@example.com
-- **Documentation**: [Wiki](https://github.com/YOUR_USERNAME/UniBristol-RAG-Assistant/wiki)
+- **Issues**: [GitHub Issues](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/discussions)
+- **Email**: ujasadepal1@gmail.com
+- **Documentation**: [Wiki](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/wiki)
 
 ---
 
@@ -947,14 +945,14 @@ furnished to do so, subject to the following conditions:
 
 If you find this project helpful, please consider giving it a star! ⭐
 
-[![Star History Chart](https://api.star-history.com/svg?repos=YOUR_USERNAME/UniBristol-RAG-Assistant&type=Date)](https://star-history.com/#YOUR_USERNAME/UniBristol-RAG-Assistant&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=UjasAdepal/UniBristol-RAG-Assistant&type=Date)](https://star-history.com/#UjasAdepal/UniBristol-RAG-Assistant&Date)
 
 ---
 
 <div align="center">
 
-**Built with ❤️ by [Your Name]**
+**Built with ❤️ by Ujas Adepal**
 
-**[Live Demo](http://YOUR_ELASTIC_IP:8501)** • **[Documentation](docs/)** • **[Report Bug](issues/)** • **[Request Feature](issues/)**
+**[Live Demo](http://13.205.105.83:8501)** • **[Documentation](docs/)** • **[Report Bug](issues/)** • **[Request Feature](issues/)**
 
 </div>
