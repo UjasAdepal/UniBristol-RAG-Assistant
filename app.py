@@ -257,7 +257,27 @@ if len(st.session_state.messages) <= 1:
     for i, example_q in enumerate(example_questions):
         with cols[i % 2]:
             if st.button(f"{example_q}", key=f"example_{i}", use_container_width=True):
+                # Add user message
                 st.session_state.messages.append({"role": "user", "content": example_q})
+                
+                # Generate response immediately
+                try:
+                    answer, sources, debug_info = get_answer(example_q, rag_system, debug_mode=debug_mode)
+                    
+                    if debug_info and "timings" in debug_info:
+                        st.session_state.query_times.append(debug_info["timings"]["total"])
+                    
+                    # Add assistant response
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": answer,
+                        "sources": sources,
+                        "timing": debug_info["timings"]["total"] if debug_info and "timings" in debug_info else 0
+                    })
+                except Exception as e:
+                    error_message = f"Sorry, I encountered an error: {str(e)}"
+                    st.session_state.messages.append({"role": "assistant", "content": error_message})
+                
                 st.rerun()
     
     st.markdown("---")
