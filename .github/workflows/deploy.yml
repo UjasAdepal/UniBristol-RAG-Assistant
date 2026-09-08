@@ -73,6 +73,7 @@ jobs:
               -p 8501:8501 \
               --name bristolbot \
               --restart unless-stopped \
+              --network bristolbot-net \
               --env-file .env \
               bristolbot:latest
             
