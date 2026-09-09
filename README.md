@@ -346,7 +346,7 @@ docker ps
 docker logs bristolbot
 ```
 
-**Access**: `http://13.205.105.83:8501`
+**Access**: `https://bristolbot.com/`
 
 ### Cost Breakdown
 
@@ -925,6 +925,6 @@ furnished to do so, subject to the following conditions:
 
 **Built with ❤️ by Ujas Adepal**
 
-**[Live Demo](http://13.205.105.83:8501)** • **[Documentation](docs/)** • **[Report Bug](issues/)** • **[Request Feature](issues/)**
+**[Live Demo](https://bristolbot.com/)** • **[Documentation](docs/)** • **[Report Bug](issues/)** • **[Request Feature](issues/)**
 
 </div>
