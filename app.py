@@ -1,5 +1,6 @@
 import os
 import csv
+import html
 import time
 import datetime
 import streamlit as st
@@ -21,7 +22,7 @@ load_dotenv()
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 st.set_page_config(
-    page_title="BristolBot",
+    page_title="BristolBot — student enquiries",
     page_icon="🎓",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -31,168 +32,198 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap');
 
 :root {
-    --uob-red: #C02F38;
-    --uob-red-dark: #9A252C;
-    --ink: #1A1A1A;
-    --ink-soft: #5B5B5B;
-    --rule: #E3E0DC;
+    --red: #C02F38;
+    --red-deep: #8E2028;
+    --ink: #16171A;
+    --ink-soft: #63666B;
+    --rule: #DFDBD6;
     --paper: #FFFFFF;
-    --paper-warm: #F7F5F3;
+    --wash: #F7F5F2;
 }
 
-.stApp {
-    background: var(--paper);
-}
+/* ---- base ---- */
+.stApp, [data-testid="stAppViewContainer"] { background: var(--paper); }
 
-html, body, [class*="css"], .stMarkdown, .stChatMessage p {
+html, body, [data-testid="stAppViewContainer"] * {
     font-family: 'Source Sans 3', -apple-system, BlinkMacSystemFont, sans-serif;
-    color: var(--ink);
 }
 
-/* Hide Streamlit chrome */
-#MainMenu, footer, header[data-testid="stHeader"] {
-    visibility: hidden;
-    height: 0;
+#MainMenu, footer, [data-testid="stHeader"], [data-testid="stToolbar"],
+[data-testid="stDecoration"], [data-testid="stStatusWidget"] {
+    display: none !important;
 }
 
 .block-container {
-    padding-top: 1rem;
-    padding-bottom: 6rem;
-    max-width: 780px;
+    max-width: 720px;
+    padding-top: 0 !important;
+    padding-bottom: 8rem;
 }
 
-/* Masthead */
-.uob-bar {
-    background: var(--uob-red);
-    margin: -1rem -100vw 0 -100vw;
-    padding: 0.9rem 100vw 0.9rem 100vw;
+/* ---- masthead ---- */
+.mast {
+    background: var(--red);
+    margin: 0 calc(50% - 50vw) 2.6rem calc(50% - 50vw);
+    border-bottom: 4px solid var(--red-deep);
 }
-.uob-bar-inner {
-    max-width: 780px;
+.mast-in {
+    max-width: 720px;
     margin: 0 auto;
+    padding: 1.05rem 0;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
 }
-.uob-bar-inner .name {
+.mast-in b {
     color: #fff;
-    font-size: 1.15rem;
+    font-size: 1.22rem;
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
 }
-.uob-bar-inner .org {
-    color: rgba(255,255,255,0.82);
-    font-size: 0.9rem;
+.mast-in span {
+    color: rgba(255,255,255,0.85);
+    font-size: 0.92rem;
+}
+
+/* ---- opening ---- */
+.lede {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 2.1rem;
+    line-height: 1.22;
     font-weight: 400;
-    margin-left: 0.6rem;
+    color: var(--ink);
+    letter-spacing: -0.015em;
+    margin: 0 0 1rem 0;
 }
-
-.uob-intro {
+.standfirst {
+    font-size: 1.03rem;
+    line-height: 1.6;
     color: var(--ink-soft);
-    font-size: 1.02rem;
-    line-height: 1.55;
-    margin: 1.6rem 0 1.9rem 0;
-    max-width: 62ch;
+    max-width: 58ch;
+    margin-bottom: 2.6rem;
 }
-
-.uob-section-label {
-    font-size: 0.95rem;
+.rubric {
+    font-size: 0.9rem;
     font-weight: 600;
-    color: var(--ink);
-    margin-bottom: 0.7rem;
+    color: var(--ink-soft);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 0.2rem;
 }
 
-/* Suggested question buttons */
+/* ---- suggested questions as list rows ---- */
 div[data-testid="stButton"] > button {
-    background: var(--paper);
+    width: 100%;
+    background: transparent;
     color: var(--ink);
-    border: 1px solid var(--rule);
-    border-radius: 6px;
-    padding: 0.75rem 0.95rem;
-    font-family: 'Source Sans 3', sans-serif;
-    font-size: 0.95rem;
+    border: none;
+    border-bottom: 1px solid var(--rule);
+    border-radius: 0;
+    padding: 0.95rem 0.2rem;
+    font-size: 1.02rem;
     font-weight: 400;
     text-align: left;
     line-height: 1.4;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: background 0.12s ease, padding-left 0.12s ease;
 }
 div[data-testid="stButton"] > button:hover {
-    border-color: var(--uob-red);
-    background: var(--paper-warm);
-    color: var(--ink);
+    background: var(--wash);
+    color: var(--red-deep);
+    padding-left: 0.7rem;
 }
+div[data-testid="stButton"] > button:focus:not(:active) { color: var(--red-deep); }
 div[data-testid="stButton"] > button:focus-visible {
-    outline: 2px solid var(--uob-red);
-    outline-offset: 2px;
+    outline: 2px solid var(--red);
+    outline-offset: -2px;
 }
 
-/* Chat */
-[data-testid="stChatMessage"] {
-    background: transparent;
-    padding: 0.35rem 0;
-}
-[data-testid="stChatMessage"] .stMarkdown p {
-    font-size: 1.02rem;
-    line-height: 1.62;
-}
-
-/* Source cards */
-.src-card {
-    border: 1px solid var(--rule);
-    border-left: 3px solid var(--uob-red);
-    border-radius: 4px;
-    padding: 0.7rem 0.9rem;
-    margin-bottom: 0.55rem;
-    background: var(--paper-warm);
-}
-.src-card .src-title {
-    font-size: 0.94rem;
+/* ---- exchange ---- */
+.ask {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.42rem;
+    line-height: 1.32;
     font-weight: 600;
     color: var(--ink);
-    line-height: 1.35;
-    margin-bottom: 0.25rem;
-}
-.src-card a {
-    font-size: 0.87rem;
-    color: var(--uob-red);
-    text-decoration: none;
-}
-.src-card a:hover { text-decoration: underline; }
-.src-card .src-score {
-    font-size: 0.8rem;
-    color: var(--ink-soft);
-    margin-left: 0.5rem;
-}
-
-.uob-meta {
-    font-size: 0.82rem;
-    color: var(--ink-soft);
-}
-
-/* Chat input */
-[data-testid="stChatInput"] textarea {
-    font-family: 'Source Sans 3', sans-serif;
-    font-size: 1rem;
-}
-
-/* Footer */
-.uob-footer {
-    margin-top: 3rem;
-    padding-top: 1rem;
+    letter-spacing: -0.01em;
+    margin: 2.4rem 0 1.1rem 0;
+    padding-top: 1.6rem;
     border-top: 1px solid var(--rule);
-    font-size: 0.82rem;
-    color: var(--ink-soft);
-    line-height: 1.5;
+}
+.first-ask { border-top: none; padding-top: 0; margin-top: 0.5rem; }
+
+.reply { padding-left: 1.1rem; border-left: 3px solid var(--red); }
+.reply .stMarkdown p,
+.reply .stMarkdown li {
+    font-family: 'Source Serif 4', Georgia, serif !important;
+    font-size: 1.08rem;
+    line-height: 1.68;
+    color: var(--ink);
 }
 
-/* Expander */
-[data-testid="stExpander"] {
-    border: none;
+/* ---- references ---- */
+.refs { margin: 1rem 0 0 1.1rem; }
+.refs .refs-head {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+    margin-bottom: 0.5rem;
 }
-[data-testid="stExpander"] summary {
-    font-size: 0.9rem;
-    color: var(--uob-red);
-    font-weight: 600;
+.refs ol { margin: 0; padding-left: 1.1rem; }
+.refs li {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--ink);
+    margin-bottom: 0.4rem;
+}
+.refs a {
+    color: var(--red-deep);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(142,32,40,0.3);
+}
+.refs a:hover { border-bottom-color: var(--red-deep); }
+.refs .rel { color: var(--ink-soft); font-size: 0.83rem; }
+
+.timing { font-size: 0.82rem; color: var(--ink-soft); margin: 0.8rem 0 0 1.1rem; }
+
+/* ---- input pinned at bottom ---- */
+[data-testid="stBottomBlockContainer"], .stBottom, [data-testid="stBottom"] {
+    background: var(--paper) !important;
+    border-top: 1px solid var(--rule);
+}
+[data-testid="stBottomBlockContainer"] { max-width: 720px; padding-bottom: 1rem; }
+[data-testid="stChatInput"] {
+    background: var(--paper);
+    border: 1.5px solid var(--rule);
+    border-radius: 4px;
+}
+[data-testid="stChatInput"]:focus-within { border-color: var(--red); }
+[data-testid="stChatInput"] textarea { font-size: 1rem; color: var(--ink); }
+[data-testid="stChatInput"] textarea::placeholder { color: var(--ink-soft); }
+
+/* ---- sidebar ---- */
+[data-testid="stSidebar"] {
+    background: var(--wash);
+    border-right: 1px solid var(--rule);
+}
+[data-testid="stSidebar"] * { color: var(--ink) !important; font-size: 0.88rem; }
+[data-testid="stSidebar"] div[data-testid="stButton"] > button {
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    padding: 0.5rem;
+}
+
+/* ---- colophon ---- */
+.colophon {
+    margin-top: 4rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.83rem;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 60ch;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -329,25 +360,44 @@ def save_feedback(question, response, is_helpful):
             writer.writerow(["Timestamp", "Query", "Response", "Helpful"])
         writer.writerow([datetime.datetime.now(), question, response, "Yes" if is_helpful else "No"])
 
-# UI HELPERS
+# PRESENTATION HELPERS
 
-def render_sources(sources, debug_mode):
-    """Render retrieved sources as cards inside an expander."""
+def answer_body(text):
+    """The prompt asks the model to list its sources, and this page prints them
+    as a reference list underneath. Trim the model's trailing copy so the same
+    links don't appear twice."""
+    for marker in ("\nSources:", "\nSource:", "\n**Sources", "\n**Source"):
+        if marker in text:
+            return text.split(marker)[0].rstrip()
+    return text
+
+def render_question(text, first=False):
+    cls = "ask first-ask" if first else "ask"
+    st.markdown(f'<div class="{cls}">{html.escape(text)}</div>', unsafe_allow_html=True)
+
+def render_answer(text):
+    st.markdown('<div class="reply">', unsafe_allow_html=True)
+    st.markdown(answer_body(text))
+    st.markdown('</div>', unsafe_allow_html=True)
+
+def render_refs(sources, debug_mode):
     if not sources:
         return
-    label = f"Sources ({len(sources)})"
-    with st.expander(label):
-        for src in sources:
-            st.markdown(
-                f"""<div class="src-card">
-                        <div class="src-title">{src['title']}</div>
-                        <a href="{src['url']}" target="_blank">View on bristol.ac.uk</a>
-                        <span class="src-score">relevance {src['score']:.2f}</span>
-                    </div>""",
-                unsafe_allow_html=True,
-            )
-            if debug_mode:
-                st.code(src['content'][:300] + "...", language="text")
+    items = "".join(
+        f'<li><a href="{html.escape(s["url"])}" target="_blank" rel="noopener">'
+        f'{html.escape(s["title"])}</a>'
+        + (f'<span class="rel"> · relevance {s["score"]:.2f}</span>' if debug_mode else "")
+        + "</li>"
+        for s in sources
+    )
+    st.markdown(
+        f'<div class="refs"><div class="refs-head">Sources</div><ol>{items}</ol></div>',
+        unsafe_allow_html=True,
+    )
+    if debug_mode:
+        with st.expander("Retrieved passages"):
+            for s in sources:
+                st.code(s["content"][:400] + "...", language="text")
 
 # INITIALIZATION
 
@@ -359,36 +409,51 @@ if "query_times" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# SIDEBAR (technical panel)
+def answer_and_store(question, debug_mode):
+    try:
+        answer, sources, debug_info = get_answer(question, rag_system, debug_mode=debug_mode)
+        if debug_info and "timings" in debug_info:
+            st.session_state.query_times.append(debug_info["timings"]["total"])
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": answer,
+            "sources": sources,
+            "timing": debug_info["timings"]["total"] if debug_info and "timings" in debug_info else 0,
+        })
+    except Exception as e:
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": f"The answering service could not be reached: {e}",
+            "sources": [],
+            "timing": 0,
+        })
+
+# SIDEBAR
 
 with st.sidebar:
     st.markdown("**Technical panel**")
     debug_mode = st.toggle("Show retrieval diagnostics", value=False)
 
     if debug_mode:
-        st.markdown("---")
-        course_loaded = rag_system["course_store"] is not None
-        st.write("Vector store:", "loaded" if course_loaded else "missing")
-        if not course_loaded:
-            st.error("Vector store is missing.")
-
-        st.caption(f"Embedding: {CONFIG['retrieval']['embedding_model']}")
-        st.caption(f"Reranker: {CONFIG['retrieval']['reranker_model']}")
-        st.caption(f"Score threshold: {CONFIG['retrieval']['score_threshold']}")
-        st.caption(f"Generation model: {CONFIG['model']['name']}")
+        st.divider()
+        st.write("Vector store:", "loaded" if rag_system["course_store"] else "missing")
+        st.caption(f"Embedding · {CONFIG['retrieval']['embedding_model']}")
+        st.caption(f"Reranker · {CONFIG['retrieval']['reranker_model']}")
+        st.caption(f"Score threshold · {CONFIG['retrieval']['score_threshold']}")
+        st.caption(f"Generation · {CONFIG['model']['name']}")
 
         if st.session_state.query_times:
-            times = st.session_state.query_times
-            st.markdown("---")
-            st.metric("Mean response", f"{sum(times)/len(times):.2f}s")
-            st.caption(f"Fastest {min(times):.2f}s · Slowest {max(times):.2f}s · {len(times)} queries")
+            t = st.session_state.query_times
+            st.divider()
+            st.metric("Mean response", f"{sum(t)/len(t):.2f}s")
+            st.caption(f"Fastest {min(t):.2f}s · slowest {max(t):.2f}s · {len(t)} queries")
 
-        st.markdown("---")
+        st.divider()
         if st.button("Clear cache"):
             st.cache_resource.clear()
             st.rerun()
 
-    if st.button("Clear conversation"):
+    if st.button("Start again"):
         st.session_state.messages = []
         st.session_state.query_times = []
         st.rerun()
@@ -396,67 +461,48 @@ with st.sidebar:
 # MASTHEAD
 
 st.markdown(
-    """<div class="uob-bar"><div class="uob-bar-inner">
-           <span class="name">BristolBot</span><span class="org">University of Bristol student enquiries</span>
-       </div></div>""",
+    '<div class="mast"><div class="mast-in">'
+    '<b>BristolBot</b><span>Student enquiries</span>'
+    '</div></div>',
     unsafe_allow_html=True,
 )
 
-# LANDING (empty conversation)
+# OPENING SCREEN
 
 if not st.session_state.messages:
+    st.markdown('<div class="lede">What do you need to know?</div>', unsafe_allow_html=True)
     st.markdown(
-        """<div class="uob-intro">
-        Answers to questions about admissions, tuition fees, scholarships, accommodation
-        and University regulations, drawn from published University of Bristol pages.
-        Every answer links to the page it came from.
-        </div>""",
+        '<div class="standfirst">Answers about admissions, tuition fees, scholarships, '
+        'accommodation and University regulations, taken from published University of '
+        'Bristol pages. Each answer lists the pages it came from.</div>',
         unsafe_allow_html=True,
     )
+    st.markdown('<div class="rubric">Frequently asked</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="uob-section-label">Common questions</div>', unsafe_allow_html=True)
-
-    example_questions = [
+    for i, q in enumerate([
         "How much is the Cratchley Scholarship worth?",
         "Can I pay tuition fees in instalments?",
         "What are the accommodation fee payment dates?",
         "What is the pass mark for a Masters dissertation?",
-    ]
+    ]):
+        if st.button(q, key=f"eg_{i}", use_container_width=True):
+            st.session_state.messages.append({"role": "user", "content": q})
+            answer_and_store(q, debug_mode)
+            st.rerun()
 
-    cols = st.columns(2)
-    for i, example_q in enumerate(example_questions):
-        with cols[i % 2]:
-            if st.button(example_q, key=f"example_{i}", use_container_width=True):
-                st.session_state.messages.append({"role": "user", "content": example_q})
-                try:
-                    answer, sources, debug_info = get_answer(example_q, rag_system, debug_mode=debug_mode)
-                    if debug_info and "timings" in debug_info:
-                        st.session_state.query_times.append(debug_info["timings"]["total"])
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": answer,
-                        "sources": sources,
-                        "timing": debug_info["timings"]["total"] if debug_info and "timings" in debug_info else 0
-                    })
-                except Exception as e:
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": f"Something went wrong reaching the answering service: {e}"
-                    })
-                st.rerun()
+# TRANSCRIPT
 
-# CONVERSATION
-
+pair_index = 0
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-        if message["role"] == "assistant" and "sources" in message:
-            render_sources(message["sources"], debug_mode)
-
-        if message["role"] == "assistant" and "timing" in message and debug_mode:
+    if message["role"] == "user":
+        render_question(message["content"], first=(pair_index == 0))
+        pair_index += 1
+    else:
+        render_answer(message["content"])
+        render_refs(message.get("sources", []), debug_mode)
+        if debug_mode and message.get("timing"):
             st.markdown(
-                f'<div class="uob-meta">Answered in {message["timing"]:.2f}s</div>',
+                f'<div class="timing">Answered in {message["timing"]:.2f}s</div>',
                 unsafe_allow_html=True,
             )
 
@@ -464,54 +510,15 @@ for message in st.session_state.messages:
 
 if user_input := st.chat_input("Ask about fees, scholarships, accommodation or regulations"):
     st.session_state.messages.append({"role": "user", "content": user_input})
+    with st.spinner("Searching University pages"):
+        answer_and_store(user_input, debug_mode)
+    st.rerun()
 
-    with st.chat_message("user"):
-        st.markdown(user_input)
-
-    with st.chat_message("assistant"):
-        with st.spinner("Searching University pages"):
-            try:
-                answer, sources, debug_info = get_answer(user_input, rag_system, debug_mode=debug_mode)
-
-                if debug_info and "timings" in debug_info:
-                    st.session_state.query_times.append(debug_info["timings"]["total"])
-
-                st.markdown(answer)
-                render_sources(sources, debug_mode)
-
-                if debug_mode and debug_info:
-                    st.markdown(
-                        f'<div class="uob-meta">Retrieved {debug_info.get("total_retrieved", 0)} passages, '
-                        f'kept {debug_info.get("after_rerank", 0)} above threshold · '
-                        f'{debug_info["timings"]["total"]:.2f}s</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": answer,
-                    "sources": sources,
-                    "timing": debug_info["timings"]["total"] if debug_info and "timings" in debug_info else 0
-                })
-                st.rerun()
-
-            except Exception as e:
-                st.error(f"Something went wrong reaching the answering service: {e}")
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": f"Something went wrong reaching the answering service: {e}"
-                })
-                if debug_mode:
-                    st.exception(e)
-                st.rerun()
-
-# FOOTER
+# COLOPHON
 
 st.markdown(
-    """<div class="uob-footer">
-    An independent project, not affiliated with or endorsed by the University of Bristol.
-    Answers are generated from published University web pages and may be out of date —
-    check the linked source before acting on anything.
-    </div>""",
+    '<div class="colophon">An independent project, not affiliated with or endorsed by '
+    'the University of Bristol. Answers are generated from published University web pages '
+    'and may be out of date. Check the linked source before acting on anything.</div>',
     unsafe_allow_html=True,
 )
