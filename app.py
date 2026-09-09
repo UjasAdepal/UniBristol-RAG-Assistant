@@ -117,18 +117,32 @@ div[data-testid="stButton"] > button {
     border-bottom: 1px solid var(--rule);
     border-radius: 0;
     padding: 0.95rem 0.15rem;
-    font-size: 1.03rem;
     font-weight: 400;
-    text-align: left;
     line-height: 1.4;
+    display: block;
+    text-align: left;
     transition: background 0.12s ease, padding-left 0.12s ease;
+}
+/* Streamlit wraps button text in its own <p>, which is what actually needs
+   the alignment and size. */
+div[data-testid="stButton"] > button p {
+    text-align: left;
+    font-size: 1.03rem;
+    margin: 0;
 }
 div[data-testid="stButton"] > button:hover {
     background: var(--wash);
     color: var(--red-deep);
     padding-left: 0.65rem;
 }
-div[data-testid="stButton"] > button:focus:not(:active) { color: var(--red-deep); }
+div[data-testid="stButton"] > button:active { background: var(--wash); }
+/* don't let the clicked button keep its hover background */
+div[data-testid="stButton"] > button:focus,
+div[data-testid="stButton"] > button:focus:not(:active) {
+    background: transparent;
+    color: var(--ink);
+    box-shadow: none;
+}
 div[data-testid="stButton"] > button:focus-visible {
     outline: 2px solid var(--red);
     outline-offset: -2px;
@@ -220,9 +234,24 @@ div[data-testid="stButton"] > button:focus-visible {
 [data-testid="stChatInput"] textarea { font-size: 1rem; color: var(--ink); }
 
 /* ---------- diagnostics + colophon ---------- */
-[data-testid="stExpander"] { border: none; border-top: 1px solid var(--rule); border-radius: 0; margin-top: 3.5rem; }
-[data-testid="stExpander"] summary { font-size: 0.83rem; color: var(--ink-soft); font-weight: 600; }
+/* diagnostics: a quiet line near the foot of the page, not a panel */
+[data-testid="stExpander"] {
+    border: none !important;
+    border-radius: 0;
+    box-shadow: none;
+    margin-top: 4.5rem;
+    background: transparent;
+}
+[data-testid="stExpander"] details { border: none !important; background: transparent; }
+[data-testid="stExpander"] summary {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    font-weight: 400;
+    padding: 0;
+}
 [data-testid="stExpander"] summary:hover { color: var(--red-deep); }
+[data-testid="stExpander"] [data-testid="stExpanderDetails"] { padding-top: 0.9rem; }
+[data-testid="stExpander"] [data-testid="stExpanderDetails"] * { font-size: 0.8rem; }
 
 .colophon {
     margin-top: 1.5rem;
@@ -542,8 +571,8 @@ if user_input := st.chat_input("Ask about fees, scholarships, accommodation or r
 
 # DIAGNOSTICS
 
-with st.expander("Technical detail"):
-    st.toggle("Show retrieval diagnostics", key="diagnostics")
+with st.expander("How this answer was produced"):
+    st.toggle("Show retrieval scores and model details", key="diagnostics")
 
     if debug_mode:
         st.write("Vector store:", "loaded" if rag_system["course_store"] else "missing")
