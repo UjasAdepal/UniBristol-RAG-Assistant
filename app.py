@@ -182,25 +182,23 @@ div[data-testid="stButton"] > button:focus-visible {
     letter-spacing: 0.05em;
     padding-bottom: 0.45rem;
     border-bottom: 1px solid var(--rule);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
 }
-.note { margin-bottom: 0.95rem; display: flex; gap: 0.55rem; }
-.note .n {
-    font-size: 0.74rem;
-    font-weight: 700;
-    color: var(--red);
-    padding-top: 0.15rem;
-    min-width: 0.9rem;
+.notes ol { margin: 0; padding-left: 1.15rem; }
+.notes li {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    margin-bottom: 0.9rem;
+    padding-left: 0.15rem;
 }
-.note a {
-    font-size: 0.85rem;
-    line-height: 1.42;
+.notes li::marker { color: var(--red); font-weight: 700; font-size: 0.78rem; }
+.notes a {
     color: var(--ink);
     text-decoration: none;
     border-bottom: 1px solid var(--rule);
 }
-.note a:hover { color: var(--red-deep); border-bottom-color: var(--red-deep); }
-.note .rel { display: block; font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.15rem; }
+.notes a:hover { color: var(--red-deep); border-bottom-color: var(--red-deep); }
+.notes .rel { display: block; font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.2rem; }
 
 @media (max-width: 860px) {
     .xchg { grid-template-columns: 1fr; gap: 1.6rem; }
@@ -222,7 +220,7 @@ div[data-testid="stButton"] > button:focus-visible {
 [data-testid="stChatInput"] textarea { font-size: 1rem; color: var(--ink); }
 
 /* ---------- diagnostics + colophon ---------- */
-[data-testid="stExpander"] { border: none; border-top: 1px solid var(--rule); border-radius: 0; }
+[data-testid="stExpander"] { border: none; border-top: 1px solid var(--rule); border-radius: 0; margin-top: 3.5rem; }
 [data-testid="stExpander"] summary { font-size: 0.83rem; color: var(--ink-soft); font-weight: 600; }
 [data-testid="stExpander"] summary:hover { color: var(--red-deep); }
 
@@ -438,17 +436,23 @@ def md_to_html(text):
 def render_exchange(question, answer, sources, opening, debug_mode):
     """One question, its answer, and its sources as a single HTML grid."""
     if sources:
-        notes = "".join(
-            f'<div class="note"><span class="n">{i}</span>'
-            f'<a href="{html.escape(s["url"])}" target="_blank" rel="noopener">'
-            f'{html.escape(s["title"])}'
-            + (f'<span class="rel">relevance {s["score"]:.2f}</span>' if debug_mode else "")
-            + "</a></div>"
-            for i, s in enumerate(sources, 1)
+        rows = []
+        for s in sources:
+            rel = ""
+            if debug_mode:
+                rel = '<span class="rel">relevance {:.2f}</span>'.format(s["score"])
+            rows.append(
+                '<li><a href="{}" target="_blank" rel="noopener">{}</a>{}</li>'.format(
+                    html.escape(s["url"]), html.escape(s["title"]), rel
+                )
+            )
+        aside = (
+            '<div class="notes"><div class="notes-head">Sources</div><ol>'
+            + "".join(rows)
+            + "</ol></div>"
         )
-        aside = f'<div class="notes"><div class="notes-head">Sources</div>{notes}</div>'
         count = len(sources)
-        provenance = f'Drawn from {count} University page{"" if count == 1 else "s"}'
+        provenance = "Drawn from {} University page{}".format(count, "" if count == 1 else "s")
     else:
         aside = '<div class="notes"></div>'
         provenance = "No matching University page found"
