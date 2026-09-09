@@ -1,7 +1,7 @@
 # 🎓 BristolBot - AI Academic Advisor
 
 [![Deploy to AWS](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/actions/workflows/deploy.yml/badge.svg)](https://github.com/UjasAdepal/UniBristol-RAG-Assistant/actions/workflows/deploy.yml)
-[![Live Demo](https://img.shields.io/badge/Demo-Live%2024%2F7-success?style=for-the-badge&logo=amazonec2)](http://13.205.105.83:8501)
+[![Live Demo](https://img.shields.io/badge/Demo-Live%2024%2F7-success?style=for-the-badge&logo=amazonec2)](https://bristolbot.com/)
 [![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)](https://www.python.org/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
 [![AWS](https://img.shields.io/badge/AWS-EC2-FF9900?style=for-the-badge&logo=amazonaws)](https://aws.amazon.com/ec2/)
@@ -12,7 +12,7 @@
 
 ## 🔗 Quick Links
 
-- **[🚀 Try Live Demo](http://13.205.105.83:8501)** - Test the application
+- **[🚀 Try Live Demo](https://bristolbot.com/)** - Test the application
 - **[📊 Performance Metrics](#-performance-metrics)** - 93% recall, <1s latency
 - **[🏗️ Architecture](#%EF%B8%8F-system-architecture)** - Technical design
 - **[⚙️ CI/CD Pipeline](#%EF%B8%8F-cicd-pipeline)** - Automated deployments
