@@ -1,0 +1,41 @@
+
+services:
+  bristolbot:
+    build: .
+    image: bristolbot:latest
+    container_name: bristolbot
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8501:8501"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    networks:
+      - bristolbot-net
+
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    depends_on:
+      - bristolbot
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - bristolbot-net
+    command: caddy reverse-proxy --from bristolbot.com --to bristolbot:8501
+
+networks:
+  bristolbot-net:
+    external: true
+
+volumes:
+  hf_cache:
+  caddy_data:
+    external: true
+  caddy_config:
+    external: true
