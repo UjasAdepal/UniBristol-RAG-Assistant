@@ -191,6 +191,51 @@ div[data-testid="stButton"] > button:focus-visible {
 .reply li { margin-bottom: 0.4rem; }
 .reply a { color: var(--red-deep); }
 
+/* an error looks nothing like a real answer, so it can't be mistaken for one */
+.reply.errored {
+    border-left-color: #A34A2E;
+    background: #FBF3EF;
+    padding: 0.9rem 1.1rem;
+    border-radius: 0 4px 4px 0;
+}
+.reply.errored p { font-family: 'Source Sans 3', sans-serif; font-size: 0.97rem; color: #6B3A26; }
+
+/* shown the instant a question is submitted, before the answer exists yet */
+.reply.pending p {
+    font-family: 'Source Sans 3', sans-serif;
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 0.98rem;
+}
+.pending-dot {
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--red);
+    margin-left: 0.3rem;
+    animation: pulse 1.1s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+/* the "start over" control beside the masthead — a small action, not a
+   list row, so it needs its own rule rather than the generic button style */
+.st-key-topbar_reset button {
+    width: auto;
+    max-width: none;
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.35rem 0.85rem;
+}
+.st-key-topbar_reset button p {
+    text-align: center;
+    font-size: 0.83rem;
+    color: var(--ink-soft);
+}
+.st-key-topbar_reset button:hover { border-color: var(--red); background: var(--wash); }
+.st-key-topbar_reset button:hover p { color: var(--red-deep); }
+
+
 /* sidenotes */
 .notes { padding-top: 0.35rem; position: sticky; top: 1.5rem; align-self: start; }
 .notes-head {
@@ -489,7 +534,7 @@ def md_to_html(text):
     flush()
     return "".join(out)
 
-def render_exchange(question, answer, sources, opening, debug_mode):
+def render_exchange(question, answer, sources, opening, debug_mode, errored=False):
     """One question, its answer, and its sources as a single HTML grid."""
     if sources:
         rows = []
@@ -511,14 +556,31 @@ def render_exchange(question, answer, sources, opening, debug_mode):
         provenance = "Drawn from {} University page{}".format(count, "" if count == 1 else "s")
     else:
         aside = '<div class="notes"></div>'
-        provenance = "No matching University page found"
+        provenance = "" if errored else "No matching University page found"
+
+    reply_class = "reply errored" if errored else "reply"
+    body = answer if errored else md_to_html(strip_model_sources(answer))
 
     st.markdown(
         f'<div class="xchg{" opening" if opening else ""}">'
         f'<div><div class="ask">{html.escape(question)}</div>'
         f'<div class="provenance">{provenance}</div>'
-        f'<div class="reply">{md_to_html(strip_model_sources(answer))}</div></div>'
+        f'<div class="{reply_class}">{body}</div></div>'
         f"{aside}</div>",
+        unsafe_allow_html=True,
+    )
+
+def render_pending(question, opening):
+    """Shown the instant a question is submitted, before the answer exists.
+    Real chat products echo the question immediately rather than leaving the
+    screen static during the several seconds retrieval and generation take -
+    this is that echo."""
+    st.markdown(
+        f'<div class="xchg{" opening" if opening else ""}">'
+        f'<div><div class="ask">{html.escape(question)}</div>'
+        f'<div class="reply pending"><p>Searching University pages'
+        f'<span class="pending-dot"></span></p></div></div>'
+        f'<div class="notes"></div></div>',
         unsafe_allow_html=True,
     )
 
@@ -533,26 +595,40 @@ if "messages" not in st.session_state:
 
 debug_mode = st.session_state.get("diagnostics", False)
 
-def answer_and_store(question):
+def ask(question):
+    """Record the question immediately and rerun. The answer is filled in by
+    fulfil_pending() on the run that follows, so the question appears on
+    screen before the several-second retrieval-and-generation round trip
+    completes, rather than only once the whole thing is done."""
+    st.session_state.messages.append({
+        "question": question, "answer": None, "sources": None,
+        "timing": 0, "retrieved": None, "errored": False,
+    })
+    st.rerun()
+
+def fulfil_pending():
+    """If the last message is still waiting on an answer, compute it now."""
+    if not st.session_state.messages:
+        return
+    last = st.session_state.messages[-1]
+    if last["answer"] is not None:
+        return
     try:
-        answer, sources, debug_info = get_answer(question, rag_system, debug_mode=debug_mode)
+        answer, sources, debug_info = get_answer(last["question"], rag_system, debug_mode=debug_mode)
         if debug_info and "timings" in debug_info:
             st.session_state.query_times.append(debug_info["timings"]["total"])
-        st.session_state.messages.append({
-            "question": question,
+        last.update({
             "answer": answer,
             "sources": sources,
             "timing": debug_info["timings"]["total"] if debug_info and "timings" in debug_info else 0,
             "retrieved": debug_info.get("total_retrieved") if debug_info else None,
         })
     except Exception as e:
-        st.session_state.messages.append({
-            "question": question,
+        last.update({
             "answer": f"The answering service could not be reached: {e}",
-            "sources": [],
-            "timing": 0,
-            "retrieved": None,
+            "sources": [], "errored": True,
         })
+    st.rerun()
 
 # MASTHEAD
 
@@ -560,6 +636,17 @@ st.markdown(
     '<div class="mast"><b>BristolBot</b><span>Student enquiries</span></div>',
     unsafe_allow_html=True,
 )
+
+# the one, obvious, always-visible way back to the start - not buried inside
+# a "how this answer was produced" panel where nobody would think to look
+if st.session_state.messages:
+    _, col = st.columns([6, 1])
+    with col:
+        with st.container(key="topbar_reset"):
+            if st.button("Start over"):
+                st.session_state.messages = []
+                st.session_state.query_times = []
+                st.rerun()
 
 # OPENING
 
@@ -580,21 +667,26 @@ if not st.session_state.messages:
         "What is the pass mark for a Masters dissertation?",
     ]):
         if st.button(q, key=f"eg_{i}"):
-            answer_and_store(q)
-            st.rerun()
+            ask(q)
 
 # TRANSCRIPT
 
 for i, m in enumerate(st.session_state.messages):
-    render_exchange(m["question"], m["answer"], m["sources"], opening=(i == 0),
-                    debug_mode=debug_mode)
+    if m["answer"] is None:
+        render_pending(m["question"], opening=(i == 0))
+    else:
+        render_exchange(m["question"], m["answer"], m["sources"], opening=(i == 0),
+                        debug_mode=debug_mode, errored=m.get("errored", False))
 
 # INPUT
 
 if user_input := st.chat_input("Ask about fees, scholarships, accommodation or regulations"):
-    with st.spinner("Searching University pages"):
-        answer_and_store(user_input)
-    st.rerun()
+    ask(user_input)
+
+# a pending message left over from this run (a fresh question, or a page
+# reload that landed mid-answer) gets computed here, after the placeholder
+# above has already been shown
+fulfil_pending()
 
 # DIAGNOSTICS
 
@@ -614,19 +706,14 @@ with st.expander("How this answer was produced"):
                 f"Mean {sum(t)/len(t):.2f}s · fastest {min(t):.2f}s · "
                 f"slowest {max(t):.2f}s · {len(t)} queries"
             )
-        if st.session_state.messages:
-            last = st.session_state.messages[-1]
-            if last.get("retrieved") is not None:
-                st.caption(
-                    f"Last query retrieved {last['retrieved']} passages, "
-                    f"kept {len(last['sources'])} above threshold, "
-                    f"answered in {last['timing']:.2f}s"
-                )
-
-    if st.session_state.messages and st.button("Start again"):
-        st.session_state.messages = []
-        st.session_state.query_times = []
-        st.rerun()
+        answered = [m for m in st.session_state.messages if m.get("retrieved") is not None]
+        if answered:
+            last = answered[-1]
+            st.caption(
+                f"Last query retrieved {last['retrieved']} passages, "
+                f"kept {len(last['sources'])} above threshold, "
+                f"answered in {last['timing']:.2f}s"
+            )
 
 st.markdown(
     '<div class="colophon">An independent project, not affiliated with or endorsed by '
