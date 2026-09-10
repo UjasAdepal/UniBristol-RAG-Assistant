@@ -59,7 +59,7 @@ html, body, [data-testid="stAppViewContainer"] * {
 
 .block-container {
     max-width: 1000px;
-    padding: 0 2rem 9rem 2rem !important;
+    padding: 0 2rem 2rem 2rem !important;
 }
 
 /* ---------- masthead ---------- */
@@ -174,7 +174,11 @@ div[data-testid="stButton"] > button:focus-visible {
     margin-bottom: 1.3rem;
 }
 
-.reply { border-left: 3px solid var(--red); padding-left: 1.4rem; }
+.reply {
+    border-left: 3px solid var(--red);
+    padding-left: 1.4rem;
+    max-width: 66ch;
+}
 .reply p, .reply li {
     font-family: 'Source Serif 4', Georgia, serif;
     font-size: 1.09rem;
@@ -188,7 +192,7 @@ div[data-testid="stButton"] > button:focus-visible {
 .reply a { color: var(--red-deep); }
 
 /* sidenotes */
-.notes { padding-top: 0.35rem; }
+.notes { padding-top: 0.35rem; position: sticky; top: 1.5rem; align-self: start; }
 .notes-head {
     font-size: 0.76rem;
     font-weight: 700;
@@ -212,11 +216,23 @@ div[data-testid="stButton"] > button:focus-visible {
     border-bottom: 1px solid var(--rule);
 }
 .notes a:hover { color: var(--red-deep); border-bottom-color: var(--red-deep); }
+.notes a:focus-visible, .reply a:focus-visible {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+}
 .notes .rel { display: block; font-size: 0.75rem; color: var(--ink-soft); margin-top: 0.2rem; }
 
 @media (max-width: 860px) {
-    .xchg { grid-template-columns: 1fr; gap: 1.6rem; }
-    .lede { font-size: 1.95rem; }
+    /* stack, and let the answer come before its sources */
+    .xchg { grid-template-columns: 1fr; gap: 1.4rem; }
+    .lede { font-size: 1.95rem; max-width: none; }
+    .notes {
+        position: static;
+        border-top: 1px solid var(--rule);
+        padding-top: 1rem;
+    }
+    .notes-head { border-bottom: none; padding-bottom: 0; }
+    .reply { padding-left: 1rem; }
 }
 
 /* ---------- input ---------- */
@@ -254,7 +270,9 @@ div[data-testid="stButton"] > button:focus-visible {
 [data-testid="stExpander"] [data-testid="stExpanderDetails"] * { font-size: 0.8rem; }
 
 .colophon {
-    margin-top: 1.5rem;
+    margin-top: 2.5rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--rule);
     font-size: 0.81rem;
     line-height: 1.55;
     color: var(--ink-soft);
@@ -397,6 +415,15 @@ def save_feedback(question, response, is_helpful):
 
 # PRESENTATION
 
+def tidy_title(raw):
+    """Scraped page titles carry the site's navigation trail, e.g.
+    'Cratchley scholarship in history | Current students | University of Bristol'.
+    Only the first segment names the page, so drop the rest. Falls back to the
+    whole string if splitting would leave nothing useful."""
+    first = str(raw).split("|")[0].strip()
+    return first if len(first) > 3 else str(raw).strip()
+
+
 def strip_model_sources(text):
     """The prompt asks the model to list its sources; this page shows them as
     sidenotes instead. Drop the model's trailing copy so links aren't duplicated."""
@@ -472,7 +499,7 @@ def render_exchange(question, answer, sources, opening, debug_mode):
                 rel = '<span class="rel">relevance {:.2f}</span>'.format(s["score"])
             rows.append(
                 '<li><a href="{}" target="_blank" rel="noopener">{}</a>{}</li>'.format(
-                    html.escape(s["url"]), html.escape(s["title"]), rel
+                    html.escape(s["url"]), html.escape(tidy_title(s["title"])), rel
                 )
             )
         aside = (
