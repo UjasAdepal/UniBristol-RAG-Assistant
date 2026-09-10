@@ -1,3 +1,15 @@
+# BristolBot - deployment Dockerfile
+#
+# Drop-in replacement for the existing Dockerfile. Application code is
+# untouched; the only real change is HOW PyTorch gets installed.
+#
+# Why it matters: requirements.txt has no torch in it, but
+# langchain-huggingface -> sentence-transformers -> torch. The default
+# PyPI wheel for torch bundles the NVIDIA CUDA runtime (multiple GB of
+# libraries this app can never use, since EC2 t-series has no GPU).
+# Installing the CPU-only wheel first satisfies the dependency and cuts
+# the image down considerably.
+
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -6,9 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# CPU-only PyTorch first, from PyTorch's own index — stops pip from
-# pulling the default GPU build later, which is several GB of CUDA
-# libraries this instance can never use.
 RUN pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cpu \
     torch==2.5.1
@@ -17,6 +26,15 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+# The feedback log is a single file mounted from a named volume (see
+# docker-compose.yml) so 👍/👎 responses survive a redeploy instead of
+# vanishing when the container is recreated. Docker needs the path to
+# already exist as a FILE at image-build time - otherwise, the first time
+# it attaches an empty named volume to a path that doesn't exist yet, it
+# creates a directory there instead, and Python's open(path, 'a') then
+# fails with "Is a directory".
+RUN touch feedback_log.csv
 
 ENV PYTHONUNBUFFERED=1
 ENV TOKENIZERS_PARALLELISM=false
