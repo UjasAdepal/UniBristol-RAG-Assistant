@@ -1,4 +1,3 @@
-
 services:
   bristolbot:
     build: .
@@ -10,6 +9,10 @@ services:
       - "8501:8501"
     volumes:
       - hf_cache:/root/.cache/huggingface
+      # single-file mount: preserves feedback_log.csv (thumbs up/down)
+      # across redeploys. Requires the touch in the Dockerfile - see the
+      # comment there for why.
+      - feedback_data:/app/feedback_log.csv
     networks:
       - bristolbot-net
 
@@ -35,6 +38,7 @@ networks:
 
 volumes:
   hf_cache:
+  feedback_data:
   caddy_data:
     external: true
   caddy_config:
