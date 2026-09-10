@@ -59,7 +59,7 @@ html, body, [data-testid="stAppViewContainer"] * {
 
 .block-container {
     max-width: 1000px;
-    padding: 0 2rem 2rem 2rem !important;
+    padding: 0 2rem 7rem 2rem !important;
 }
 
 /* ---------- masthead ---------- */
