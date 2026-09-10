@@ -166,8 +166,57 @@ div[data-testid="stButton"] > button:focus-visible {
     font-weight: 600;
     color: var(--ink);
     letter-spacing: -0.012em;
-    margin-bottom: 0.45rem;
+    margin: 0 0 0.45rem 0;   /* h2 default margins reset - this is a heading now */
 }
+.xchg { scroll-margin-top: 1.5rem; }  /* anchor jumps land with breathing room, not flush to the viewport edge */
+
+/* per-answer retrieval stats, shown only in debug mode, right under that
+   answer's own sources - not one global stat block that can't say which
+   answer it describes */
+.stat-line {
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin: 0.9rem 0 0 0;
+}
+
+/* feedback: text, not icons, to stay in step with the rest of the page */
+[class*="st-key-fbrow"] button {
+    width: auto; max-width: none;
+    background: transparent; border: none; border-radius: 0;
+    padding: 0.15rem 0;
+    text-decoration: underline; text-decoration-color: var(--rule);
+    text-underline-offset: 3px;
+}
+[class*="st-key-fbrow"] button p { text-align: left; font-size: 0.85rem; color: var(--ink-soft); margin: 0; }
+[class*="st-key-fbrow"] button:hover p { color: var(--red-deep); }
+[class*="st-key-fbrow"] button:hover { text-decoration-color: var(--red-deep); }
+.fb-prompt { font-size: 0.85rem; color: var(--ink-soft); margin: 0.9rem 0 0.3rem 0; }
+.fb-thanks { font-size: 0.85rem; color: var(--ink-soft); margin: 0.9rem 0 0 0; font-style: italic; }
+
+/* the questions-so-far list and the system-details disclosure: page-level
+   controls, not answer content, so they get a slightly firmer voice than
+   .provenance - the old near-invisible grey was the actual complaint */
+.st-key-meta_row [data-testid="stExpander"] {
+    margin-top: 0 !important;
+}
+.st-key-meta_row [data-testid="stExpander"] summary {
+    font-size: 0.86rem !important;
+    color: var(--ink) !important;
+    font-weight: 600 !important;
+}
+.st-key-meta_row [data-testid="stExpander"] summary:hover { color: var(--red-deep) !important; }
+
+.qlist { margin: 0; padding-left: 0; list-style: none; }
+.qlist li {
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.92rem;
+}
+.qlist li:last-child { border-bottom: none; }
+.qlist a { color: var(--ink); text-decoration: none; }
+.qlist a:hover { color: var(--red-deep); }
+.qlist .qn { color: var(--red); font-weight: 700; margin-right: 0.5rem; font-size: 0.8rem; }
+
 .provenance {
     font-size: 0.82rem;
     color: var(--ink-soft);
@@ -534,41 +583,82 @@ def md_to_html(text):
     flush()
     return "".join(out)
 
-def render_exchange(question, answer, sources, opening, debug_mode, errored=False):
-    """One question, its answer, and its sources as a single HTML grid."""
-    if sources:
-        rows = []
-        for s in sources:
-            rel = ""
-            if debug_mode:
-                rel = '<span class="rel">relevance {:.2f}</span>'.format(s["score"])
-            rows.append(
-                '<li><a href="{}" target="_blank" rel="noopener">{}</a>{}</li>'.format(
-                    html.escape(s["url"]), html.escape(tidy_title(s["title"])), rel
-                )
+def render_exchange(i, m, opening, debug_mode):
+    """One question, its answer, sources, and - if it resolved successfully -
+    that answer's own retrieval stats and a feedback prompt.
+
+    Sources are still pure HTML (nothing interactive in them). The answer
+    side now uses real Streamlit columns rather than one HTML string, because
+    the feedback buttons are real widgets that need to call back into Python -
+    something a markdown string can never do, the way sources or the reply
+    text can just be printed."""
+    question, answer, sources, errored = m["question"], m["answer"], m["sources"], m.get("errored", False)
+
+    st.markdown(f'<div class="xchg{" opening" if opening else ""}" id="q-{i}"></div>',
+               unsafe_allow_html=True)
+
+    left, right = st.columns([3, 1], gap="large")
+
+    with left:
+        st.markdown(f'<h2 class="ask">{html.escape(question)}</h2>', unsafe_allow_html=True)
+
+        if errored:
+            provenance = ""
+        elif sources:
+            count = len(sources)
+            provenance = "Drawn from {} University page{}".format(count, "" if count == 1 else "s")
+        else:
+            provenance = "No matching University page found"
+        if provenance:
+            st.markdown(f'<div class="provenance">{provenance}</div>', unsafe_allow_html=True)
+
+        reply_class = "reply errored" if errored else "reply"
+        body = answer if errored else md_to_html(strip_model_sources(answer))
+        st.markdown(f'<div class="{reply_class}">{body}</div>', unsafe_allow_html=True)
+
+        if debug_mode and not errored and m.get("retrieved") is not None:
+            st.markdown(
+                f'<div class="stat-line">Retrieved {m["retrieved"]} passages, '
+                f'kept {len(sources)} above threshold, answered in {m["timing"]:.2f}s</div>',
+                unsafe_allow_html=True,
             )
-        aside = (
-            '<div class="notes"><div class="notes-head">Sources</div><ol>'
-            + "".join(rows)
-            + "</ol></div>"
-        )
-        count = len(sources)
-        provenance = "Drawn from {} University page{}".format(count, "" if count == 1 else "s")
-    else:
-        aside = '<div class="notes"></div>'
-        provenance = "" if errored else "No matching University page found"
 
-    reply_class = "reply errored" if errored else "reply"
-    body = answer if errored else md_to_html(strip_model_sources(answer))
+        if not errored:
+            if m.get("feedback"):
+                st.markdown('<div class="fb-thanks">Thanks for letting us know.</div>',
+                           unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="fb-prompt">Was this helpful?</div>', unsafe_allow_html=True)
+                with st.container(key=f"fbrow_{i}"):
+                    fc1, fc2 = st.columns([1, 6])
+                    with fc1:
+                        if st.button("Yes", key=f"fb_yes_{i}"):
+                            save_feedback(question, answer, True)
+                            m["feedback"] = "yes"
+                            st.rerun()
+                    with fc2:
+                        if st.button("No", key=f"fb_no_{i}"):
+                            save_feedback(question, answer, False)
+                            m["feedback"] = "no"
+                            st.rerun()
 
-    st.markdown(
-        f'<div class="xchg{" opening" if opening else ""}">'
-        f'<div><div class="ask">{html.escape(question)}</div>'
-        f'<div class="provenance">{provenance}</div>'
-        f'<div class="{reply_class}">{body}</div></div>'
-        f"{aside}</div>",
-        unsafe_allow_html=True,
-    )
+    with right:
+        if sources:
+            rows = []
+            for s in sources:
+                rel = ""
+                if debug_mode:
+                    rel = '<span class="rel">relevance {:.2f}</span>'.format(s["score"])
+                rows.append(
+                    '<li><a href="{}" target="_blank" rel="noopener">{}</a>{}</li>'.format(
+                        html.escape(s["url"]), html.escape(tidy_title(s["title"])), rel
+                    )
+                )
+            st.markdown(
+                '<div class="notes"><div class="notes-head">Sources</div><ol>'
+                + "".join(rows) + "</ol></div>",
+                unsafe_allow_html=True,
+            )
 
 def render_pending(question, opening):
     """Shown the instant a question is submitted, before the answer exists.
@@ -602,7 +692,7 @@ def ask(question):
     completes, rather than only once the whole thing is done."""
     st.session_state.messages.append({
         "question": question, "answer": None, "sources": None,
-        "timing": 0, "retrieved": None, "errored": False,
+        "timing": 0, "retrieved": None, "errored": False, "feedback": None,
     })
     st.rerun()
 
@@ -637,16 +727,55 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# the one, obvious, always-visible way back to the start - not buried inside
-# a "how this answer was produced" panel where nobody would think to look
-if st.session_state.messages:
-    _, col = st.columns([6, 1])
-    with col:
-        with st.container(key="topbar_reset"):
-            if st.button("Start over"):
-                st.session_state.messages = []
-                st.session_state.query_times = []
-                st.rerun()
+# META CONTROLS
+# One clear row near the top, not one control buried at the very bottom of
+# the page under a label that only made sense for a single answer. System
+# details is always available; the question list and reset only mean
+# anything once a conversation exists.
+
+with st.container(key="meta_row"):
+    resolved = [(idx, msg) for idx, msg in enumerate(st.session_state.messages) if msg["answer"] is not None]
+
+    if st.session_state.messages:
+        col_q, col_sys, col_reset = st.columns([3, 3, 2])
+    else:
+        col_q, col_reset = None, None
+        col_sys = st.container()
+
+    if col_q is not None and len(resolved) >= 2:
+        with col_q:
+            with st.expander(f"Your questions ({len(resolved)})"):
+                items = "".join(
+                    f'<li><span class="qn">{n}</span><a href="#q-{idx}">{html.escape(msg["question"])}</a></li>'
+                    for n, (idx, msg) in enumerate(resolved, 1)
+                )
+                st.markdown(f'<ul class="qlist">{items}</ul>', unsafe_allow_html=True)
+
+    with col_sys:
+        with st.expander("System details"):
+            st.toggle("Show retrieval scores and model details", key="diagnostics")
+
+            if debug_mode:
+                st.write("Vector store:", "loaded" if rag_system["course_store"] else "missing")
+                st.caption(f"Embedding · {CONFIG['retrieval']['embedding_model']}")
+                st.caption(f"Reranker · {CONFIG['retrieval']['reranker_model']}")
+                st.caption(f"Score threshold · {CONFIG['retrieval']['score_threshold']}")
+                st.caption(f"Generation · {CONFIG['model']['name']}")
+
+                if st.session_state.query_times:
+                    t = st.session_state.query_times
+                    st.caption(
+                        f"Mean {sum(t)/len(t):.2f}s · fastest {min(t):.2f}s · "
+                        f"slowest {max(t):.2f}s · {len(t)} queries"
+                    )
+
+    if col_reset is not None:
+        with col_reset:
+            with st.container(key="topbar_reset"):
+                if st.button("Start over"):
+                    st.session_state.messages = []
+                    st.session_state.query_times = []
+                    st.rerun()
 
 # OPENING
 
@@ -675,8 +804,7 @@ for i, m in enumerate(st.session_state.messages):
     if m["answer"] is None:
         render_pending(m["question"], opening=(i == 0))
     else:
-        render_exchange(m["question"], m["answer"], m["sources"], opening=(i == 0),
-                        debug_mode=debug_mode, errored=m.get("errored", False))
+        render_exchange(i, m, opening=(i == 0), debug_mode=debug_mode)
 
 # INPUT
 
@@ -687,33 +815,6 @@ if user_input := st.chat_input("Ask about fees, scholarships, accommodation or r
 # reload that landed mid-answer) gets computed here, after the placeholder
 # above has already been shown
 fulfil_pending()
-
-# DIAGNOSTICS
-
-with st.expander("How this answer was produced"):
-    st.toggle("Show retrieval scores and model details", key="diagnostics")
-
-    if debug_mode:
-        st.write("Vector store:", "loaded" if rag_system["course_store"] else "missing")
-        st.caption(f"Embedding · {CONFIG['retrieval']['embedding_model']}")
-        st.caption(f"Reranker · {CONFIG['retrieval']['reranker_model']}")
-        st.caption(f"Score threshold · {CONFIG['retrieval']['score_threshold']}")
-        st.caption(f"Generation · {CONFIG['model']['name']}")
-
-        if st.session_state.query_times:
-            t = st.session_state.query_times
-            st.caption(
-                f"Mean {sum(t)/len(t):.2f}s · fastest {min(t):.2f}s · "
-                f"slowest {max(t):.2f}s · {len(t)} queries"
-            )
-        answered = [m for m in st.session_state.messages if m.get("retrieved") is not None]
-        if answered:
-            last = answered[-1]
-            st.caption(
-                f"Last query retrieved {last['retrieved']} passages, "
-                f"kept {len(last['sources'])} above threshold, "
-                f"answered in {last['timing']:.2f}s"
-            )
 
 st.markdown(
     '<div class="colophon">An independent project, not affiliated with or endorsed by '
