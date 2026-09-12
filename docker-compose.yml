@@ -9,6 +9,11 @@ services:
       - "8501:8501"
     volumes:
       - hf_cache:/root/.cache/huggingface
+      # directory mount, not a single-file mount - see the Dockerfile
+      # comment for why that distinction is what actually matters here.
+      # feedback_log.csv is a symlink (baked into the image) pointing
+      # into this directory, so it survives every redeploy.
+      - feedback_data:/app/data
     networks:
       - bristolbot-net
 
@@ -34,6 +39,7 @@ networks:
 
 volumes:
   hf_cache:
+  feedback_data:
   caddy_data:
     external: true
   caddy_config:
