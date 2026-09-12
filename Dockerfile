@@ -1,9 +1,10 @@
 # BristolBot - deployment Dockerfile
 #
 # Drop-in replacement for the existing Dockerfile. Application code is
-# untouched; the only real change is HOW PyTorch gets installed.
+# untouched; the only real changes are HOW PyTorch gets installed and how
+# the feedback log survives a redeploy.
 #
-# Why it matters: requirements.txt has no torch in it, but
+# Why the PyTorch step matters: requirements.txt has no torch in it, but
 # langchain-huggingface -> sentence-transformers -> torch. The default
 # PyPI wheel for torch bundles the NVIDIA CUDA runtime (multiple GB of
 # libraries this app can never use, since EC2 t-series has no GPU).
@@ -27,14 +28,24 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# The feedback log is a single file mounted from a named volume (see
-# docker-compose.yml) so 👍/👎 responses survive a redeploy instead of
-# vanishing when the container is recreated. Docker needs the path to
-# already exist as a FILE at image-build time - otherwise, the first time
-# it attaches an empty named volume to a path that doesn't exist yet, it
-# creates a directory there instead, and Python's open(path, 'a') then
-# fails with "Is a directory".
-RUN touch feedback_log.csv
+# Making feedback_log.csv survive a redeploy, take two.
+#
+# The first attempt mounted a named volume directly onto the file path
+# itself. That's the wrong shape for Docker: when a named volume is empty
+# and gets attached to a path that doesn't already exist as a file *inside
+# that volume*, Docker creates a directory there - it does not turn into a
+# file to match. The mount then fails outright, because a file can't bind
+# onto a directory. That's exactly what broke the last deploy.
+#
+# Every real Docker Compose volume - including hf_cache and caddy_data
+# already working correctly in this same file - mounts onto a directory.
+# That's the one genuinely reliable shape. So: create a small data
+# directory, and point feedback_log.csv at a file inside it via a plain
+# filesystem symlink. app.py and config.py are completely unaware of any
+# of this - they still just open() "feedback_log.csv" relative to /app,
+# exactly as they always have. The symlink is what quietly redirects that
+# into the persisted volume.
+RUN mkdir -p /app/data && ln -s data/feedback_log.csv feedback_log.csv
 
 ENV PYTHONUNBUFFERED=1
 ENV TOKENIZERS_PARALLELISM=false
