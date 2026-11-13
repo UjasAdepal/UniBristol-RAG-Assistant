@@ -3,11 +3,13 @@ Configuration module for BristolBot RAG system.
 Centralizes model parameters, retrieval settings, and file paths.
 """
 
+import os
+
 CONFIG = {
     "experiment_name": "BristolBot_Production",
     
     "model": {
-        "name": "gpt-3.5-turbo",
+        "name": os.getenv("BRISTOLBOT_LLM_MODEL", "gpt-4.1-mini"),
         "temperature": 0.1,
         "provider": "OpenAI"
     },
